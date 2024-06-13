@@ -1,1 +1,23 @@
-export class Order {}
+import { Column, CreateDateColumn, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { OrderItem } from "./order_item.entity";
+
+export class Order {
+    @PrimaryGeneratedColumn('uuid')
+    id: string;
+
+    @Column({ type: 'decimal', precision: 10, scale: 2 })
+    total_price: number;
+
+    @CreateDateColumn()
+    creation_date: Date;
+
+    @Column({type: 'timestamp'})
+    shipment_date: Date;
+
+    @Column({type: 'timestamp'})
+    received_date: Date;
+
+    @OneToMany(()=>OrderItem, (item)=>item.order)
+    items: OrderItem[]
+
+}
