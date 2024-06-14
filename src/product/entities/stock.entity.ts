@@ -9,6 +9,6 @@ export class Stock{
     @Column()
     stock:number;
 
-    @Column()
+    @Column({nullable:true})
     unities_sold: number;
 }

@@ -28,7 +28,7 @@ export class Product {
     @JoinColumn()
     stock:Stock
 
-    @OneToMany(()=>Review, (review)=> review.product)
+    @OneToMany(()=>Review, (review)=> review.product,{ nullable: true })
     reviews: Review[]
 
 }
