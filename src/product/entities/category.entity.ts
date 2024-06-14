@@ -1,5 +1,6 @@
-import { Column, Entity, OneToMany, PrimaryColumn } from "typeorm";
+import { Column, Entity, ManyToMany, ManyToOne, OneToMany, PrimaryColumn } from "typeorm";
 import { Product } from "./product.entity";
+import { Group } from "./group.entity";
 
 @Entity()
 export class Category {
@@ -11,4 +12,10 @@ export class Category {
 
     @OneToMany(() => Product,(product) => product.category)
     products: Product[]
+
+    @ManyToOne(()=>Group, (group)=>group.categories)
+    group : Group;
+
+    @Column()
+    image_url: string;
 }

@@ -3,11 +3,14 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Product } from './entities/product.entity';
-import { ILike, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Category } from './entities/category.entity';
 import { Review } from './entities/review.entity';
 import { Stock } from './entities/stock.entity';
 import { CreateCategoryDto } from './dto/create-category.dto';
+import { UpdateCategoryDto } from './dto/update-category.dto';
+import { CreateGroupDto } from './dto/create-group.dto';
+import { UpdateGroupDto } from './dto/update-group.dto';
 
 @Injectable()
 export class ProductService {
@@ -105,28 +108,6 @@ export class ProductService {
     }
   }
 
-  async createCategory(createCategoryDto:CreateCategoryDto): Promise<Category>{
-    try {
-      const categoryName = createCategoryDto.name;
-      const category = this.categoryRepository.findOne({where:{name:categoryName}})
-      if(category){
-        throw Error(`La categoria con nombre: ${categoryName} ya existe`);
-      }
-      const newCategory = this.categoryRepository.create(createCategoryDto);
-      return this.categoryRepository.save(newCategory);
-    } catch (error) {
-      throw new BadRequestException(error.message);
-    } 
-  }
-
-  async createStock(stock:number): Promise<Stock>{
-    const newStock = this.stockRepository.create({
-      stock
-    });
-
-    return this.stockRepository.save(newStock);
-  }
-
   async getProductsByCategory(categoryName: string, page: string, limit: string ): Promise<[Product[], number]> {
     try {
       const pageNumber = parseInt(page, 10);
@@ -197,6 +178,68 @@ export class ProductService {
       .toLowerCase()
       .split(" ")
       .filter(word => !commonArticles.includes(word));
+  }
+
+  // CRUD CATEGORIES
+  async createCategory(createCategoryDto:CreateCategoryDto): Promise<Category>{
+    try {
+      const categoryName = createCategoryDto.name;
+      const category = this.categoryRepository.findOne({where:{name:categoryName}})
+      if(category){
+        throw Error(`La categoria con nombre: ${categoryName} ya existe`);
+      }
+      const newCategory = this.categoryRepository.create(createCategoryDto);
+      return this.categoryRepository.save(newCategory);
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    } 
+  }
+
+  getAllCategories(): Promise<Category[]> {
+    throw new Error('Method not implemented.');
+  }
+
+  updateCategory(categoryName: string, updateCategoryDto: UpdateCategoryDto): Promise<Category> {
+    throw new Error('Method not implemented.');
+  }
+
+  getCategoryByName(categoryName: string): Promise<Category> {
+    throw new Error('Method not implemented.');
+  }
+
+  deleteCategory(categoryName: string): Promise<Category> {
+    throw new Error('Method not implemented.');
+  }
+
+  //CRUD GROUP
+
+  createGroup(createGroupDto: CreateGroupDto): Promise<import("./entities/group.entity").Group> {
+    throw new Error('Method not implemented.');
+  }
+
+  getAllGroups(): Promise<Category[]> {
+    throw new Error('Method not implemented.');
+  }
+
+  getGroupByName(groupName: string): Promise<Category> {
+    throw new Error('Method not implemented.');
+  }
+
+  updateGroup(groupName: string, updateGroupDto: UpdateGroupDto): Promise<Category> {
+    throw new Error('Method not implemented.');
+  }
+
+  deleteGroup(groupName: string): Promise<Category> {
+    throw new Error('Method not implemented.');
+  }
+
+  //CRUD STOCK
+  async createStock(stock:number): Promise<Stock>{
+    const newStock = this.stockRepository.create({
+      stock
+    });
+
+    return this.stockRepository.save(newStock);
   }
 
 
