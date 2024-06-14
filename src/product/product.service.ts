@@ -3,7 +3,7 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Product } from './entities/product.entity';
-import { Repository } from 'typeorm';
+import { ILike, Repository } from 'typeorm';
 import { Category } from './entities/category.entity';
 import { Review } from './entities/review.entity';
 import { Stock } from './entities/stock.entity';
@@ -46,11 +46,16 @@ export class ProductService {
 
   }
 
-  async getAllProducts(page: string, limit: string):Promise<Product[]> {
-    const pageNumber = parseInt(page, 10);
-    const limitNumber = parseInt(limit, 10);
+  async getAllProducts(page: string, limit: string):Promise<[Product[], number]>{
     try {
-      return await this.productRepository.find({
+      const pageNumber = parseInt(page, 10);
+      const limitNumber = parseInt(limit, 10);
+
+      if (isNaN(pageNumber) || isNaN(limitNumber) || pageNumber <= 0 || limitNumber <= 0) {
+        throw new Error('La pagina y el limite deben ser numeros positivos');
+      }
+
+      return await this.productRepository.findAndCount({
         skip: (pageNumber - 1) * limitNumber,
         take: limitNumber,
         relations: {
@@ -122,17 +127,77 @@ export class ProductService {
     return this.stockRepository.save(newStock);
   }
 
-  async getProductsByCategory(category: string, page: string, limit: string): Promise<Product[]> {
-    const pageNumber = parseInt(page, 10);
-    const limitNumber = parseInt(limit, 10);
-
-    const products = await this.productRepository.find({
-      where: { name: category }, 
-      skip: (pageNumber - 1) * limitNumber, 
-      take: limitNumber 
-    });
-    return products;
-
+  async getProductsByCategory(categoryName: string, page: string, limit: string ): Promise<[Product[], number]> {
+    try {
+      const pageNumber = parseInt(page, 10);
+      const limitNumber = parseInt(limit, 10);
+  
+      if (isNaN(pageNumber) || isNaN(limitNumber) || pageNumber <= 0 || limitNumber <= 0) {
+        throw new Error('La pagina y el limite deben ser numeros positivos');
+      }
+  
+      const category = await this.categoryRepository.findOne({
+        where: { name: categoryName },
+        relations: ['products']
+      });
+  
+      if (!category) {
+        throw new Error(`Categoria con nombre ${categoryName} no existe`);
+      }
+  
+      const total = category.products.length;
+  
+      const paginatedProducts = category.products.slice((pageNumber - 1) * limitNumber, pageNumber * limitNumber);
+  
+      return [paginatedProducts, total];
+    } catch (error) {
+      throw new BadRequestException(error.message)
+    }
   }
+
+  async searchProducts( keyword: string, page: string, limit: string): Promise<[Product[], number]> {
+    try {
+      const pageNumber = parseInt(page, 10);
+      const limitNumber = parseInt(limit, 10);
+  
+      if (isNaN(pageNumber) || isNaN(limitNumber) || pageNumber <= 0 || limitNumber <= 0) {
+        throw new Error('La página y el límite deben ser números positivos');
+      }
+  
+      const keywords = this.extractKeywords(keyword);
+  
+      if (keywords.length === 0) {
+        return [[], 0];
+      }
+  
+      const queryBuilder = this.productRepository.createQueryBuilder("product");
+  
+      keywords.forEach((word, index) => {
+        if (index === 0) {
+          queryBuilder.where("product.name ILIKE :word", { word: `%${word}%` });
+        } else {
+          queryBuilder.orWhere("product.name ILIKE :word", { word: `%${word}%` });
+        }
+      });
+  
+      const [products, total] = await queryBuilder
+        .skip((pageNumber - 1) * limitNumber)
+        .take(limitNumber)
+        .getManyAndCount();
+  
+      return [products, total];
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
+  }
+
+  extractKeywords(keyword: string): string[] {
+    const commonArticles = ["el", "la", "los", "las", "un", "una", "unos", "unas", "de", "del", "al", "y", "o", "a", "en"];
+    return keyword
+      .toLowerCase()
+      .split(" ")
+      .filter(word => !commonArticles.includes(word));
+  }
+
 
 }

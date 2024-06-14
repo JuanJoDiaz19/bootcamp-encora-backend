@@ -16,7 +16,7 @@ export class ProductController {
   }
 
   @Get()
-  findAll(@Query('page') page: string, @Query('limit') limit: string): Promise<Product[]> {
+  findAll(@Query('page') page: string, @Query('limit') limit: string): Promise<[Product[], number]> {
     return this.productService.getAllProducts(page,limit);
   }
 
@@ -40,9 +40,14 @@ export class ProductController {
     return this.productService.createCategory(createCategoryDto);
   }
 
-  @Get('categoty/:name')
-  getProductsByCategory(@Param('name') category: string, @Query('page') page: string, @Query('limit') limit: string):Promise<Product[]>{
+  @Get('category/:name')
+  getProductsByCategory(@Param('name') category: string, @Query('page') page: string, @Query('limit') limit: string):Promise<[Product[], number]>{
     return this.productService.getProductsByCategory(category, page, limit);
+  }
+
+  @Get('search')
+  searchProducts(@Query('keyword') keyword: string, @Query('page') page: string, @Query('limit') limit: string): Promise<[Product[], number]>{
+    return this.productService.searchProducts(keyword,page,limit);
   }
 
 }
