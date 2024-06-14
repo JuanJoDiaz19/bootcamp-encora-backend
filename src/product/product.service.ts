@@ -3,7 +3,7 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Product } from './entities/product.entity';
-import { Repository } from 'typeorm';
+import { DeleteResult, Repository } from 'typeorm';
 import { Category } from './entities/category.entity';
 import { Review } from './entities/review.entity';
 import { Stock } from './entities/stock.entity';
@@ -88,7 +88,7 @@ export class ProductService {
       const product = await this.getProductById(id);
 
       if(!product){
-        throw new Error(`No es posible actualizar el libro con ID: ${id}, ya que no existe`);
+        throw new Error(`No es posible actualizar el producto con ID: ${id}, ya que no existe`);
       }
   
       const updateProduct = Object.assign(product, updateProductDto);
@@ -98,7 +98,7 @@ export class ProductService {
     }
   }
 
-  async removeProduct(id: string) {
+  async removeProduct(id: string): Promise<DeleteResult> {
     try {
       const product = this.getProductById(id);
       const result = await this.productRepository.delete(id);
@@ -195,20 +195,62 @@ export class ProductService {
     } 
   }
 
-  getAllCategories(): Promise<Category[]> {
-    throw new Error('Method not implemented.');
+  async getAllCategories(page: string, limit: string): Promise<[Category[],number]> {
+    try {
+      const pageNumber = parseInt(page, 10);
+      const limitNumber = parseInt(limit, 10);
+
+      if (isNaN(pageNumber) || isNaN(limitNumber) || pageNumber <= 0 || limitNumber <= 0) {
+        throw new Error('La pagina y el limite deben ser numeros positivos');
+      }
+
+      return await this.categoryRepository.findAndCount({
+        skip: (pageNumber - 1) * limitNumber,
+        take: limitNumber,
+        relations: {
+          products: true,
+        },
+      });
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
   }
 
-  updateCategory(categoryName: string, updateCategoryDto: UpdateCategoryDto): Promise<Category> {
-    throw new Error('Method not implemented.');
+  async updateCategory(categoryName: string, updateCategoryDto: UpdateCategoryDto): Promise<Category> {
+    try {
+      const category = await this.getCategoryByName(categoryName);
+
+      if(!category){
+        throw new Error(`No es posible actualizar la categoria con nombre ${categoryName}, ya que no existe`);
+      }
+  
+      const updateCategory = Object.assign(category, updateCategoryDto);
+      return this.categoryRepository.save(updateCategory);
+    } catch (error) {
+      throw new NotFoundException(error.message);
+    }
   }
 
   getCategoryByName(categoryName: string): Promise<Category> {
-    throw new Error('Method not implemented.');
+    try {
+      const category = this.categoryRepository.findOne({where:{name:categoryName}});
+      if(!category){
+        throw new Error(`La categoria con nombre: ${categoryName} no existe`);
+      }
+      return category;
+    } catch (error) {
+      throw new NotFoundException(error.message);
+    }
   }
 
-  deleteCategory(categoryName: string): Promise<Category> {
-    throw new Error('Method not implemented.');
+  async deleteCategory(categoryName: string): Promise<DeleteResult> {
+    try {
+      const category = this.getCategoryByName(categoryName);
+      const result = await this.categoryRepository.delete(categoryName);
+      return result;
+    } catch (error) {
+      throw new NotFoundException(error.message);
+    }
   }
 
   //CRUD GROUP

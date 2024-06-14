@@ -9,6 +9,7 @@ import { Category } from './entities/category.entity';
 import { Group } from './entities/group.entity';
 import { CreateGroupDto } from './dto/create-group.dto';
 import { UpdateGroupDto } from './dto/update-group.dto';
+import { DeleteResult } from 'typeorm';
 
 @Controller('product')
 export class ProductController {
@@ -36,7 +37,7 @@ export class ProductController {
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
+  remove(@Param('id') id: string): Promise<DeleteResult> {
     return this.productService.removeProduct(id);
   }
 
@@ -58,8 +59,8 @@ export class ProductController {
   }
 
   @Get('category')
-  getAllCategories(): Promise<Category[]>{
-    return this.productService.getAllCategories();
+  getAllCategories(@Query('page') page: string, @Query('limit') limit: string): Promise<[Category[],number]>{
+    return this.productService.getAllCategories(page,limit);
   }
 
   @Get('category/:name')
@@ -73,7 +74,7 @@ export class ProductController {
   }
 
   @Delete('category/:name')
-  deleteCategory(@Param('name') categoryName: string): Promise<Category>{
+  deleteCategory(@Param('name') categoryName: string): Promise<DeleteResult> {
     return this.productService.deleteCategory(categoryName);
   }
 
