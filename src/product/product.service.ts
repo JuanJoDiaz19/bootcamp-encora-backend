@@ -12,6 +12,8 @@ import { UpdateCategoryDto } from './dto/update-category.dto';
 import { CreateGroupDto } from './dto/create-group.dto';
 import { UpdateGroupDto } from './dto/update-group.dto';
 import { Group } from './entities/group.entity';
+import { CreateReviewDto } from './dto/create-review.dto';
+import { UpdateReviewDto } from './dto/update-review.dto';
 
 @Injectable()
 export class ProductService {
@@ -45,7 +47,7 @@ export class ProductService {
         stock,
       });
         
-      return this.productRepository.save(newProduct);
+      return await this.productRepository.save(newProduct);
     }catch(error){
       throw new BadRequestException(error.message);
     }
@@ -76,7 +78,13 @@ export class ProductService {
 
   async getProductById(id: string):Promise<Product> {
     try {
-      const product = this.productRepository.findOne({where:{id}});
+      const product = await this.productRepository.findOne({
+        where:{id},
+        relations:{
+          category:true,
+          stock:true,
+        }
+      });
       if(!product){
         throw new Error(`El producto con ID: ${id} no existe`);
       }
@@ -93,9 +101,14 @@ export class ProductService {
       if(!product){
         throw new Error(`No es posible actualizar el producto con ID: ${id}, ya que no existe`);
       }
+
+      const stock = await this.updateStock(product.stock,updateProductDto.stock);
   
-      const updateProduct = Object.assign(product, updateProductDto);
-      return this.productRepository.save(updateProduct);
+      const updateProduct = Object.assign(product,{
+        ...updateProductDto,
+        stock,
+      } );
+      return await this.productRepository.save(updateProduct);
     } catch (error) {
       throw new NotFoundException(error.message);
     }
@@ -199,7 +212,7 @@ export class ProductService {
         group:group,
       });
 
-      return this.categoryRepository.save(newCategory);
+      return await this.categoryRepository.save(newCategory);
     } catch (error) {
       throw new BadRequestException(error.message);
     } 
@@ -236,15 +249,15 @@ export class ProductService {
       }
   
       const updateCategory = Object.assign(category, updateCategoryDto);
-      return this.categoryRepository.save(updateCategory);
+      return await this.categoryRepository.save(updateCategory);
     } catch (error) {
       throw new NotFoundException(error.message);
     }
   }
 
-  getCategoryByName(categoryName: string): Promise<Category> {
+  async getCategoryByName(categoryName: string): Promise<Category> {
     try {
-      const category = this.categoryRepository.findOne({
+      const category = await this.categoryRepository.findOne({
         where:{name:categoryName},
         relations:{
           products:true,
@@ -275,12 +288,12 @@ export class ProductService {
   async createGroup(createGroupDto: CreateGroupDto): Promise<Group> {
     try {
       const groupName = createGroupDto.name;
-      const group = this.groupRepository.findOne({where:{name:groupName}})
+      const group = await this.groupRepository.findOne({where:{name:groupName}})
       if(group){
         throw Error(`El grupo con nombre: ${groupName} ya existe`);
       }
       const newGroup = this.groupRepository.create(createGroupDto);
-      return this.groupRepository.save(newGroup);
+      return await this.groupRepository.save(newGroup);
     } catch (error) {
       throw new BadRequestException(error.message);
     } 
@@ -309,7 +322,7 @@ export class ProductService {
 
   async getGroupByName(groupName: string): Promise<Group> {
     try {
-      const group = this.groupRepository.findOne({
+      const group = await this.groupRepository.findOne({
         where:{name:groupName},
         relations:{
           categories:true,
@@ -333,7 +346,7 @@ export class ProductService {
       }
   
       const updateGroup = Object.assign(group, updateGroupDto);
-      return this.groupRepository.save(updateGroup);
+      return await this.groupRepository.save(updateGroup);
     } catch (error) {
       throw new NotFoundException(error.message);
     }
@@ -355,8 +368,46 @@ export class ProductService {
       stock
     });
 
-    return this.stockRepository.save(newStock);
+    return await this.stockRepository.save(newStock);
   }
 
+  async updateStock(stock: Stock, value: number):Promise<Stock>{
+    const updateStock = Object.assign(stock,{
+      stock:value,
+    } );
+    return await this.stockRepository.save(updateStock);
+  }
+
+  async updateSoldUnits(productId:string ): Promise<Stock>{
+    const product = await this.getProductById(productId);
+    const stock = product.stock
+    const soldUnits = stock.unities_sold+1
+    const updateStock = Object.assign(stock,{
+      unities_sold:soldUnits,
+    } );
+    return await this.stockRepository.save(updateStock);
+  }
+
+  //CRUD REVIEW
+
+  async createReview(createReviewDto: CreateReviewDto): Promise<Review> {
+    throw new Error('Method not implemented.');
+  }
+
+  async getAllReviews(page: string, limit: string): Promise<[Review[], number]> {
+    throw new Error('Method not implemented.');
+  }
+
+  async getReviewById(id: string): Promise<Review> {
+    throw new Error('Method not implemented.');
+  }
+
+  async updateReview(id: string, updateReviewDto: UpdateReviewDto): Promise<Review> {
+    throw new Error('Method not implemented.');
+  }
+
+  async deleteReview(id: string): Promise<DeleteResult> {
+    throw new Error('Method not implemented.');
+  }
 
 }

@@ -10,6 +10,9 @@ import { Group } from './entities/group.entity';
 import { CreateGroupDto } from './dto/create-group.dto';
 import { UpdateGroupDto } from './dto/update-group.dto';
 import { DeleteResult } from 'typeorm';
+import { Review } from './entities/review.entity';
+import { CreateReviewDto } from './dto/create-review.dto';
+import { UpdateReviewDto } from './dto/update-review.dto';
 
 @Controller('product')
 export class ProductController {
@@ -102,6 +105,33 @@ export class ProductController {
   @Delete('group/:name')
   deleteGroup(@Param('name') groupName: string): Promise<DeleteResult>{
     return this.productService.deleteGroup(groupName);
+  }
+
+  //CRUD REVIEW
+
+  @Post('review')
+  createReview(@Body() createReviewDto: CreateReviewDto): Promise<Review>{
+    return this.productService.createReview(createReviewDto);
+  }
+
+  @Get('review')
+  getAllReviews(@Query('page') page: string, @Query('limit') limit: string): Promise<[Review[],number]>{
+    return this.productService.getAllReviews(page,limit);
+  }
+
+  @Get('review/:id')
+  getReviewById(@Param('id') id: string): Promise<Review>{
+    return this.productService.getReviewById(id);
+  }
+
+  @Patch('review/:id')
+  updateReview(@Param('id') id: string, updateReviewDto: UpdateReviewDto): Promise<Review>{
+    return this.productService.updateReview(id, updateReviewDto);
+  }
+
+  @Delete('review/:id')
+  deleteReview(@Param('id') id: string): Promise<DeleteResult>{
+    return this.productService.deleteReview(id);
   }
 
 
