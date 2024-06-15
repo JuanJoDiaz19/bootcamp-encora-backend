@@ -85,22 +85,22 @@ export class ProductController {
   }
 
   @Get('group')
-  getAllGroups(): Promise<Category[]>{
-    return this.productService.getAllGroups();
+  getAllGroups(@Query('page') page: string, @Query('limit') limit: string): Promise<[Group[],number]>{
+    return this.productService.getAllGroups(page,limit);
   }
 
   @Get('group/:name')
-  getGroupByName(@Param('name') groupName: string): Promise<Category>{
+  getGroupByName(@Param('name') groupName: string): Promise<Group>{
     return this.productService.getGroupByName(groupName);
   }
 
   @Patch('group/:name')
-  updateGroup(@Param('name') groupName: string, updateGroupDto: UpdateGroupDto): Promise<Category>{
+  updateGroup(@Param('name') groupName: string, updateGroupDto: UpdateGroupDto): Promise<Group>{
     return this.productService.updateGroup(groupName, updateGroupDto);
   }
 
   @Delete('group/:name')
-  deleteGroup(@Param('name') groupName: string): Promise<Category>{
+  deleteGroup(@Param('name') groupName: string): Promise<DeleteResult>{
     return this.productService.deleteGroup(groupName);
   }
 

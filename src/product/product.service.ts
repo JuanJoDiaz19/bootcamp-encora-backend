@@ -11,6 +11,7 @@ import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { CreateGroupDto } from './dto/create-group.dto';
 import { UpdateGroupDto } from './dto/update-group.dto';
+import { Group } from './entities/group.entity';
 
 @Injectable()
 export class ProductService {
@@ -24,6 +25,8 @@ export class ProductService {
     private readonly reviewRepository: Repository<Review>,
     @InjectRepository(Stock)
     private readonly stockRepository: Repository<Stock>,
+    @InjectRepository(Group)
+    private readonly groupRepository: Repository<Group>,
   ){}
 
   async createProduct(createProductDto: CreateProductDto): Promise<Product> {
@@ -188,7 +191,14 @@ export class ProductService {
       if(category){
         throw Error(`La categoria con nombre: ${categoryName} ya existe`);
       }
-      const newCategory = this.categoryRepository.create(createCategoryDto);
+
+      const group = await this.getGroupByName(createCategoryDto.groupName);
+
+      const newCategory = this.categoryRepository.create({
+        ...createCategoryDto,
+        group:group,
+      });
+
       return this.categoryRepository.save(newCategory);
     } catch (error) {
       throw new BadRequestException(error.message);
@@ -209,6 +219,7 @@ export class ProductService {
         take: limitNumber,
         relations: {
           products: true,
+          group:true,
         },
       });
     } catch (error) {
@@ -233,7 +244,13 @@ export class ProductService {
 
   getCategoryByName(categoryName: string): Promise<Category> {
     try {
-      const category = this.categoryRepository.findOne({where:{name:categoryName}});
+      const category = this.categoryRepository.findOne({
+        where:{name:categoryName},
+        relations:{
+          products:true,
+          group:true,
+        }
+      });
       if(!category){
         throw new Error(`La categoria con nombre: ${categoryName} no existe`);
       }
@@ -255,24 +272,81 @@ export class ProductService {
 
   //CRUD GROUP
 
-  createGroup(createGroupDto: CreateGroupDto): Promise<import("./entities/group.entity").Group> {
-    throw new Error('Method not implemented.');
+  async createGroup(createGroupDto: CreateGroupDto): Promise<Group> {
+    try {
+      const groupName = createGroupDto.name;
+      const group = this.groupRepository.findOne({where:{name:groupName}})
+      if(group){
+        throw Error(`El grupo con nombre: ${groupName} ya existe`);
+      }
+      const newGroup = this.groupRepository.create(createGroupDto);
+      return this.groupRepository.save(newGroup);
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    } 
   }
 
-  getAllGroups(): Promise<Category[]> {
-    throw new Error('Method not implemented.');
+  async getAllGroups(page: string, limit: string): Promise<[Group[],number]> {
+    try {
+      const pageNumber = parseInt(page, 10);
+      const limitNumber = parseInt(limit, 10);
+
+      if (isNaN(pageNumber) || isNaN(limitNumber) || pageNumber <= 0 || limitNumber <= 0) {
+        throw new Error('La pagina y el limite deben ser numeros positivos');
+      }
+
+      return await this.groupRepository.findAndCount({
+        skip: (pageNumber - 1) * limitNumber,
+        take: limitNumber,
+        relations: {
+          categories: true,
+        },
+      });
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
   }
 
-  getGroupByName(groupName: string): Promise<Category> {
-    throw new Error('Method not implemented.');
+  async getGroupByName(groupName: string): Promise<Group> {
+    try {
+      const group = this.groupRepository.findOne({
+        where:{name:groupName},
+        relations:{
+          categories:true,
+        }
+      });
+      if(!group){
+        throw new Error(`El grupo con nombre: ${groupName} no existe`);
+      }
+      return group;
+    } catch (error) {
+      throw new NotFoundException(error.message);
+    }
   }
 
-  updateGroup(groupName: string, updateGroupDto: UpdateGroupDto): Promise<Category> {
-    throw new Error('Method not implemented.');
+  async updateGroup(groupName: string, updateGroupDto: UpdateGroupDto): Promise<Group> {
+    try {
+      const group = await this.getGroupByName(groupName);
+
+      if(!group){
+        throw new Error(`No es posible actualizar el grupo con nombre ${groupName}, ya que no existe`);
+      }
+  
+      const updateGroup = Object.assign(group, updateGroupDto);
+      return this.groupRepository.save(updateGroup);
+    } catch (error) {
+      throw new NotFoundException(error.message);
+    }
   }
 
-  deleteGroup(groupName: string): Promise<Category> {
-    throw new Error('Method not implemented.');
+  async deleteGroup(groupName: string): Promise<DeleteResult> {
+    try {
+      const group = this.getGroupByName(groupName);
+      const result = await this.groupRepository.delete(groupName);
+      return result;
+    } catch (error) {
+      throw new NotFoundException(error.message);
+    }
   }
 
   //CRUD STOCK
