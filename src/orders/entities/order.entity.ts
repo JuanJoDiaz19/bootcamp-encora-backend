@@ -1,6 +1,7 @@
-import { Column, CreateDateColumn, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { OrderItem } from "./order_item.entity";
 
+@Entity()
 export class Order {
     @PrimaryGeneratedColumn('uuid')
     id: string;
