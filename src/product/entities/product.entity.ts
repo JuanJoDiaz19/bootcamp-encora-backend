@@ -2,6 +2,8 @@ import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, Jo
 import { Category } from "./category.entity";
 import { Stock } from "./stock.entity";
 import { Review } from "./review.entity";
+import { OrderItem } from "src/orders/entities/order_item.entity";
+import { ShoppingCartItem } from "src/shopping_cart/entities/shopping_cart_item.entity";
 
 @Entity()
 export class Product {
@@ -30,5 +32,13 @@ export class Product {
 
     @OneToMany(()=>Review, (review)=> review.product,{ nullable: true })
     reviews: Review[]
+
+    @OneToMany(()=>OrderItem, (order_item)=> order_item.product,{ nullable: true })
+    order_items: OrderItem[]
+
+    @OneToMany(()=>ShoppingCartItem, (shoppping_cart_item)=> shoppping_cart_item.product,{ nullable: true })
+    shopping_cart_items: ShoppingCartItem[]
+
+
 
 }

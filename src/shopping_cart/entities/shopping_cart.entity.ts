@@ -1,12 +1,13 @@
-import { Column, OneToMany, PrimaryGeneratedColumn } from "typeorm";
-import { CartItem } from "./shopping_cart_item.entity";
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { ShoppingCartItem } from "./shopping_cart_item.entity";
 
+@Entity()
 export class ShoppingCart {
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
-    @OneToMany(()=>CartItem, (item)=>item.cart)
-    items: CartItem[];
+    @OneToMany(()=>ShoppingCartItem, (shopping_cart_item)=>shopping_cart_item.shopping_cart)
+    items: ShoppingCartItem[];
 
     @Column()
     sub_total: number;
