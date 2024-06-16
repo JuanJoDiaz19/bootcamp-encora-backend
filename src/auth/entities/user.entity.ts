@@ -30,7 +30,9 @@ export class User {
     password: string;
 
 
-    @Column('date')
+    @Column('date', { 
+        nullable: true 
+    })
     birth_date: Date;
 
     @ManyToOne( () => Role, (role) => role.users)
