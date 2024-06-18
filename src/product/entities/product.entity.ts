@@ -29,6 +29,13 @@ export class Product {
     @ManyToOne(() => Category, (category) => category.products)
     category: Category;
 
+    @Column({
+        type: 'enum',
+        enum: ['Activo', 'Inactivo', 'Agotado'],
+        default: 'Activo'
+    })
+    status: string;
+
     @OneToOne(()=>Stock)
     @JoinColumn()
     stock:Stock
@@ -41,7 +48,5 @@ export class Product {
 
     @OneToMany(()=>ShoppingCartItem, (shoppping_cart_item)=> shoppping_cart_item.product,{ nullable: true })
     shopping_cart_items: ShoppingCartItem[]
-
-
 
 }

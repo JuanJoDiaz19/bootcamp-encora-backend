@@ -54,6 +54,31 @@ export class ProductService {
 
   }
 
+  async getActiveProducts(page: string, limit: string):Promise<[Product[], number]>{
+
+    try {
+      const pageNumber = parseInt(page, 10);
+      const limitNumber = parseInt(limit, 10);
+
+      if (isNaN(pageNumber) || isNaN(limitNumber) || pageNumber <= 0 || limitNumber <= 0) {
+        throw new Error('La pagina y el limite deben ser numeros positivos');
+      }
+
+      return await this.productRepository.findAndCount({
+        where:{status:'Activo'},
+        skip: (pageNumber - 1) * limitNumber,
+        take: limitNumber,
+        relations: {
+          category: true,
+          stock:true,
+        },
+      });
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
+
+  }
+
   async getAllProducts(page: string, limit: string):Promise<[Product[], number]>{
     try {
       const pageNumber = parseInt(page, 10);
