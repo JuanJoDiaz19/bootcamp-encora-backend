@@ -391,23 +391,79 @@ export class ProductService {
   //CRUD REVIEW
 
   async createReview(createReviewDto: CreateReviewDto): Promise<Review> {
-    throw new Error('Method not implemented.');
+    try {
+      const product = await this.getProductById(createReviewDto.productId);
+      const newStock = this.reviewRepository.create({
+        ...createReviewDto,
+        product,
+      });
+      return await this.reviewRepository.save(newStock);
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
   }
 
   async getAllReviews(page: string, limit: string): Promise<[Review[], number]> {
-    throw new Error('Method not implemented.');
+    try {
+      const pageNumber = parseInt(page, 10);
+      const limitNumber = parseInt(limit, 10);
+
+      if (isNaN(pageNumber) || isNaN(limitNumber) || pageNumber <= 0 || limitNumber <= 0) {
+        throw new Error('La pagina y el limite deben ser numeros positivos');
+      }
+
+      return await this.reviewRepository.findAndCount({
+        skip: (pageNumber - 1) * limitNumber,
+        take: limitNumber,
+        relations: {
+          product: true,
+        },
+      });
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
   }
 
   async getReviewById(id: string): Promise<Review> {
-    throw new Error('Method not implemented.');
+    try {
+      const review = await this.reviewRepository.findOne({
+        where:{id},
+        relations:{
+          product:true,
+        }
+      });
+      if(!review){
+        throw new Error(`El comentario con id ${id} no existe`);
+      }
+      return review;
+    } catch (error) {
+      throw new NotFoundException(error.message);
+    }
   }
 
   async updateReview(id: string, updateReviewDto: UpdateReviewDto): Promise<Review> {
-    throw new Error('Method not implemented.');
+    try {
+      const review = await this.getReviewById(id);
+
+      if(!review){
+        throw new Error(`No es posible actualizar el comentario con id ${id}, ya que no existe`);
+      }
+  
+      const updateReview = Object.assign(review, updateReviewDto);
+      return await this.reviewRepository.save(updateReview);
+    } catch (error) {
+      throw new NotFoundException(error.message);
+    }
   }
 
   async deleteReview(id: string): Promise<DeleteResult> {
-    throw new Error('Method not implemented.');
+    try {
+      const review = this.getReviewById(id);
+      const result = await this.reviewRepository.delete(id);
+      return result;
+    } catch (error) {
+      throw new NotFoundException(error.message);
+    }
   }
 
 }
