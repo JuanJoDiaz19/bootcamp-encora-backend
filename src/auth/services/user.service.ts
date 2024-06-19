@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
@@ -11,7 +11,7 @@ import { Role } from '../entities/role.entity';
 
 
 @Injectable()
-export class AuthClientService {
+export class UserService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
@@ -21,7 +21,35 @@ export class AuthClientService {
 
   ) {}
 
-  async create( createUserDto: CreateClientDto) {
+  async createAdmin( createUserDto: CreateClientDto) {
+
+    try {
+
+        const { password, ...userData } = createUserDto;
+
+        const clientRole = await this.roleRepository.findOne({where: {role: "ADMIN"}});
+
+        const user = this.userRepository.create({
+            ...userData,
+            password: bcrypt.hashSync( password, 10 ),
+            role:  clientRole
+        });
+
+        await this.userRepository.save( user )
+
+        return {
+            ...user,
+            token: this.jwtService.sign({ id: user.id })
+        };
+        
+
+    } catch (error) {
+        this.handleDBErrors(error);
+    }
+
+}
+
+  async createClient( createUserDto: CreateClientDto) {
 
     try {
 
@@ -47,7 +75,7 @@ export class AuthClientService {
         this.handleDBErrors(error);
     }
 
-}
+  }
   
   async login( loginUserDto: LoginUserDto ) {
 
@@ -78,6 +106,27 @@ export class AuthClientService {
       ...user,
       token: this.jwtService.sign({ id: user.id })
     };
+  }
+
+  async findUserById( id_user: string) {
+
+    try {
+
+        
+        const user = await this.userRepository.findOneBy({
+            id: id_user
+        });
+
+        if(!user) {
+          throw new NotFoundException("User not found in the system")
+        } 
+
+        return user;
+
+    } catch (error) {
+        this.handleDBErrors(error);
+    }
+
   }
 
   private handleDBErrors( error: any ): never {

@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { AuthClientController } from './controllers/auth-client.controller';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
@@ -7,11 +7,11 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
 import { Role } from './entities/role.entity';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { AuthClientService } from './services/auth-client.service';
 import { AuthAdminController } from './controllers/auth-admin.controller';
-import { AuthAdminService } from './services/auth-admin.service';
 import { AdminStrategy } from './strategies/admin.strategy';
 import { ClientStrategy } from './strategies/client.strategy';
+import { CommonModule } from 'src/common/common.module';
+import { UserService } from './services/user.service';
 
 @Module({
     imports: [
@@ -24,10 +24,9 @@ import { ClientStrategy } from './strategies/client.strategy';
                 signOptions: {expiresIn:'20h'}
             })
           }), 
-        TypeOrmModule.forFeature([User]),
-        TypeOrmModule.forFeature([Role]),
+        TypeOrmModule.forFeature([User, Role]),
     ],
     controllers: [AuthClientController, AuthAdminController],
-    providers: [AuthClientService, AuthAdminService, AdminStrategy, JwtStrategy, ClientStrategy ]
+    providers: [ UserService, AdminStrategy, JwtStrategy, ClientStrategy ]
 })
 export class AuthModule {}

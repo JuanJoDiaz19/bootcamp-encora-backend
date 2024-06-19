@@ -1,5 +1,7 @@
 import { Column, Entity, ManyToMany, ManyToOne, PrimaryColumn } from "typeorm";
 import { Department } from "./Department.entity";
+import { City } from "./City.entity";
+import { User } from "src/auth/entities/user.entity";
 
 @Entity()
 export class Address { 
@@ -18,5 +20,13 @@ export class Address {
         nullable:false
     })
     zip_code: string;
+
+    @ManyToOne(()=> City, (city) => city.addresses)
+    city: City;
+
+    @ManyToOne(()=> User, (user) => user.addresses, {
+        nullable: true
+    })
+    user: User;
     
 }
