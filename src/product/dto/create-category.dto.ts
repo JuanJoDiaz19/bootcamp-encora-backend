@@ -1,6 +1,19 @@
+import { IsNotEmpty, IsString } from "class-validator";
+
 export class CreateCategoryDto{
+    @IsNotEmpty()
+    @IsString()
     name: string;
+
+    @IsNotEmpty()
+    @IsString()
     description: string;
-    groupName:string;
+
+    @IsNotEmpty()
+    @IsString()
+    groupName?: string;
+
+    @IsNotEmpty()
+    @IsString()
     url: string;
 }

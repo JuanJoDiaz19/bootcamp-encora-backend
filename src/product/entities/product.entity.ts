@@ -14,6 +14,9 @@ export class Product {
     @Column()
     name: string;
 
+    @Column({nullable:true})
+    type: string;
+
     @CreateDateColumn() 
     creation_date: Date;
 

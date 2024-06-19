@@ -69,12 +69,12 @@ export class ProductController {
   }
 
   // FILTERS
-  @Get('category/:name')
+  @Get('filter/category/:name')
   getProductsByCategory(@Param('name') category: string, @Query('page') page: string, @Query('limit') limit: string):Promise<[Product[], number]>{
     return this.productService.getProductsByCategory(category, page, limit);
   }
 
-  @Get('search')
+  @Get('filter/search')
   searchProducts(@Query('keyword') keyword: string, @Query('page') page: string, @Query('limit') limit: string): Promise<[Product[], number]>{
     return this.productService.searchProducts(keyword,page,limit);
   }
@@ -157,6 +157,5 @@ export class ProductController {
   deleteReview(@Param('id') id: string): Promise<DeleteResult>{
     return this.productService.deleteReview(id);
   }
-
 
 }

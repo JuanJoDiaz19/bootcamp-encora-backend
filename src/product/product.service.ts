@@ -267,13 +267,26 @@ export class ProductService {
 
   async updateCategory(categoryName: string, updateCategoryDto: UpdateCategoryDto): Promise<Category> {
     try {
+
       const category = await this.getCategoryByName(categoryName);
 
       if(!category){
         throw new Error(`No es posible actualizar la categoria con nombre ${categoryName}, ya que no existe`);
       }
+
+      let group;
+      const groupName = updateCategoryDto.groupName;
+      if(groupName){
+        group = this.getGroupByName(groupName);
+      }else{
+        group = category.group;
+      }
   
-      const updateCategory = Object.assign(category, updateCategoryDto);
+      const updateCategory = Object.assign(category, {
+        ...updateCategoryDto,
+        group:group,
+      }
+      );
       return await this.categoryRepository.save(updateCategory);
     } catch (error) {
       throw new NotFoundException(error.message);
