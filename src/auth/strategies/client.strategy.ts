@@ -29,7 +29,7 @@ export class ClientStrategy extends PassportStrategy(Strategy, 'client') {
     .where("user.id = :userId", { userId })
     .andWhere("role.role = :roleName", { roleName: "CLIENT" })
     .getOne();
-    console.log(user);
+    //console.log(user);
 
     return (user?true: false);
   }
