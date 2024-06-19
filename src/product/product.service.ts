@@ -225,7 +225,7 @@ export class ProductService {
   async createCategory(createCategoryDto:CreateCategoryDto): Promise<Category>{
     try {
       const categoryName = createCategoryDto.name;
-      const category = this.categoryRepository.findOne({where:{name:categoryName}})
+      const category = await this.categoryRepository.findOne({where:{name:categoryName}})
       if(category){
         throw Error(`La categoria con nombre: ${categoryName} ya existe`);
       }
