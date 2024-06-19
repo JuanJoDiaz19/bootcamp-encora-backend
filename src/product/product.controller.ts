@@ -13,6 +13,7 @@ import { DeleteResult } from 'typeorm';
 import { Review } from './entities/review.entity';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { UpdateReviewDto } from './dto/update-review.dto';
+import { InfoProductDto } from './dto/info-product.dto';
 
 @Controller('product')
 export class ProductController {
@@ -24,9 +25,32 @@ export class ProductController {
     return this.productService.createProduct(createProductDto);
   }
 
+  //Retorna todos los productos que se encuentran activos
+  @Get('active')
+  getActiveProducts(@Query('page') page: string, @Query('limit') limit: string): Promise<[Product[], number]> {
+    return this.productService.getActiveProducts(page,limit);
+  }
+
+  //Retorna todos los productos que se encuentran activos con filtrado de atributos por dto
+  @Get('info/active')
+  async getInfoActiveProducts(@Query('page') page: string, @Query('limit') limit: string): Promise<[InfoProductDto[], number]> {
+    const [products, total] = await this.productService.getActiveProducts(page, limit);
+    const infoProducts: InfoProductDto[] = products.map(product => new InfoProductDto(product));
+    return [infoProducts, total];
+  }
+
+  //Retorna todos los productos
   @Get()
   findAll(@Query('page') page: string, @Query('limit') limit: string): Promise<[Product[], number]> {
     return this.productService.getAllProducts(page,limit);
+  }
+
+  //Retorna todos los productos con filtrado de atributos por dto
+  @Get('info')
+  async findAllInfo(@Query('page') page: string, @Query('limit') limit: string): Promise<[InfoProductDto[], number]> {
+    const [products, total] = await this.productService.getAllProducts(page, limit);
+    const infoProducts: InfoProductDto[] = products.map(product => new InfoProductDto(product));
+    return [infoProducts, total];
   }
 
   @Get(':id')
@@ -45,12 +69,12 @@ export class ProductController {
   }
 
   // FILTERS
-  @Get('category/:name')
+  @Get('filter/category/:name')
   getProductsByCategory(@Param('name') category: string, @Query('page') page: string, @Query('limit') limit: string):Promise<[Product[], number]>{
     return this.productService.getProductsByCategory(category, page, limit);
   }
 
-  @Get('search')
+  @Get('filter/search')
   searchProducts(@Query('keyword') keyword: string, @Query('page') page: string, @Query('limit') limit: string): Promise<[Product[], number]>{
     return this.productService.searchProducts(keyword,page,limit);
   }
@@ -133,6 +157,5 @@ export class ProductController {
   deleteReview(@Param('id') id: string): Promise<DeleteResult>{
     return this.productService.deleteReview(id);
   }
-
 
 }

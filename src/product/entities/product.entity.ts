@@ -14,6 +14,9 @@ export class Product {
     @Column()
     name: string;
 
+    @Column({nullable:true})
+    type: string;
+
     @CreateDateColumn() 
     creation_date: Date;
 
@@ -23,8 +26,18 @@ export class Product {
     @Column({ type: 'decimal', precision: 10, scale: 2 })
     price: number;
 
+    @Column('text', { array: true })
+    image_url:string[];
+
     @ManyToOne(() => Category, (category) => category.products)
     category: Category;
+
+    @Column({
+        type: 'enum',
+        enum: ['Activo', 'Inactivo', 'Agotado'],
+        default: 'Activo'
+    })
+    status: string;
 
     @OneToOne(()=>Stock)
     @JoinColumn()
@@ -38,7 +51,5 @@ export class Product {
 
     @OneToMany(()=>ShoppingCartItem, (shoppping_cart_item)=> shoppping_cart_item.product,{ nullable: true })
     shopping_cart_items: ShoppingCartItem[]
-
-
 
 }
