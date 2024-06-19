@@ -85,7 +85,7 @@ export class ProductController {
     return this.productService.createCategory(createCategoryDto);
   }
 
-  @Get('category')
+  @Get('category/all')
   getAllCategories(@Query('page') page: string, @Query('limit') limit: string): Promise<[Category[],number]>{
     return this.productService.getAllCategories(page,limit);
   }
@@ -111,7 +111,7 @@ export class ProductController {
     return this.productService.createGroup(createGroupDto);
   }
 
-  @Get('group')
+  @Get('group/all')
   getAllGroups(@Query('page') page: string, @Query('limit') limit: string): Promise<[Group[],number]>{
     return this.productService.getAllGroups(page,limit);
   }

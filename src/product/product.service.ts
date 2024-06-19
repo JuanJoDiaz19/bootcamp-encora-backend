@@ -71,6 +71,7 @@ export class ProductService {
         relations: {
           category: true,
           stock:true,
+          reviews:true
         },
       });
     } catch (error) {
@@ -94,6 +95,7 @@ export class ProductService {
         relations: {
           category: true,
           stock:true,
+          reviews:true
         },
       });
     } catch (error) {
@@ -108,6 +110,7 @@ export class ProductService {
         relations:{
           category:true,
           stock:true,
+          reviews:true
         }
       });
       if(!product){
