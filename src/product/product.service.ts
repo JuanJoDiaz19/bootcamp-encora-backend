@@ -160,16 +160,9 @@ export class ProductService {
       if (isNaN(pageNumber) || isNaN(limitNumber) || pageNumber <= 0 || limitNumber <= 0) {
         throw new Error('La pagina y el limite deben ser numeros positivos');
       }
-  
-      const category = await this.categoryRepository.findOne({
-        where: { name: categoryName },
-        relations: ['products']
-      });
-  
-      if (!category) {
-        throw new Error(`Categoria con nombre ${categoryName} no existe`);
-      }
-  
+
+      const category =  await this.getCategoryByName(categoryName);
+
       const total = category.products.length;
   
       const paginatedProducts = category.products.slice((pageNumber - 1) * limitNumber, pageNumber * limitNumber);
@@ -222,6 +215,28 @@ export class ProductService {
       .toLowerCase()
       .split(" ")
       .filter(word => !commonArticles.includes(word));
+  }
+
+  async getProductsByGroup(groupName: string, page: string, limit: string): Promise<[Product[], number]> {
+    try {
+      const pageNumber = parseInt(page, 10);
+      const limitNumber = parseInt(limit, 10);
+  
+      if (isNaN(pageNumber) || isNaN(limitNumber) || pageNumber <= 0 || limitNumber <= 0) {
+        throw new Error('La pagina y el limite deben ser numeros positivos');
+      }
+      const group: Group = await this.getGroupByName(groupName);
+      const categories = group.categories;
+      const products: Product[] = [].concat(...categories.map(category => category.products));
+
+      const total = products.length;
+  
+      const paginatedProducts = products.slice((pageNumber - 1) * limitNumber, pageNumber * limitNumber);
+  
+      return [paginatedProducts, total];
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
   }
 
   // CRUD CATEGORIES

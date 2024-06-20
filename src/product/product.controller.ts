@@ -60,14 +60,19 @@ export class ProductController {
   }
 
   // FILTERS
-  @Get('filter/category/:name')
+  @Get('category/:name')
   getProductsByCategory(@Param('name') category: string, @Query('page') page: string, @Query('limit') limit: string):Promise<[Product[], number]>{
     return this.productService.getProductsByCategory(category, page, limit);
   }
 
-  @Get('filter/search')
+  @Get('search')
   searchProducts(@Query('keyword') keyword: string, @Query('page') page: string, @Query('limit') limit: string): Promise<[Product[], number]>{
     return this.productService.searchProducts(keyword,page,limit);
+  }
+
+  @Get('group/:name')
+  getProductsByGroup(@Param('name') groupName: string, @Query('page') page: string, @Query('limit') limit: string):Promise<[Product[],number]>{
+    return this.productService.getProductsByGroup(groupName, page, limit);
   }
 
 }
