@@ -321,7 +321,9 @@ export class ProductService {
       const category = await this.categoryRepository.findOne({
         where:{name:categoryName},
         relations:{
-          products:true,
+          products: {
+            reviews: true
+        },
           group:true,
         }
       });
