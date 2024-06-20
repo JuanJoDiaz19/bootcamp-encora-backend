@@ -1,16 +1,20 @@
-import { Module } from '@nestjs/common';
-import { CommonService } from './common.service';
-import { CommonController } from './common.controller';
+import { Module, forwardRef } from '@nestjs/common';
 import { City } from './entities/City.entity';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Department } from './entities/Department.entity';
+import { Address } from './entities/Address.entity';
+import { AddressController } from './controllers/address.controller';
+import { AddressService } from './services/address.service';
+import { AuthModule } from 'src/auth/auth.module';
+import { UserService } from 'src/auth/services/user.service';
+import { User } from 'src/auth/entities/user.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([City]),
-    TypeOrmModule.forFeature([Department]),
+    TypeOrmModule.forFeature([City, Department, Address, User]),
+    forwardRef(() => AuthModule),
   ],
-  controllers: [CommonController],
-  providers: [CommonService],
+  controllers: [AddressController],
+  providers: [AddressService],
 })
 export class CommonModule {}
