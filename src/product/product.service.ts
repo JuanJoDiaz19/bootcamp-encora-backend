@@ -227,8 +227,13 @@ export class ProductService {
       }
       const group: Group = await this.getGroupByName(groupName);
       const categories = group.categories;
-      const products: Product[] = [].concat(...categories.map(category => category.products));
+      const products = [];
 
+      for (const category of categories) {
+        const categoryProducts = await this.getCategoryByName(category.name);
+        products.push(...categoryProducts.products);
+      }
+      
       const total = products.length;
   
       const paginatedProducts = products.slice((pageNumber - 1) * limitNumber, pageNumber * limitNumber);
