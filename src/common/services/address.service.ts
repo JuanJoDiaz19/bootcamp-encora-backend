@@ -1,13 +1,16 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException, Logger, NotFoundException } from '@nestjs/common';
 import { CreateAddressDto } from '../dto/create-address.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Address } from '../entities/Address.entity';
 import { Repository } from 'typeorm';
 import { City } from '../entities/City.entity';
 import { User } from 'src/auth/entities/user.entity';
+import { UpdateAddressDto } from '../dto/update-address.dto';
 
 @Injectable()
 export class AddressService {
+
+    private readonly logger = new Logger('AddressService');
 
     constructor(
         @InjectRepository(Address)
@@ -28,28 +31,53 @@ export class AddressService {
             {id: user_id}
         )
         
-        const address_saved: Address = {
+        const address_saved = {
             ...address, 
             city, 
             user
         }
 
-        return address_saved;
+        return this.addressRepository.save(address_saved);
     }
 
-    // findAll() {
-    //     return `This action returns all shoppingCart`;
-    // }
+    findAll() {
+        return this.addressRepository.find();
+    }
 
-    // findOne(id: number) {
-    //     return `This action returns a #${id} shoppingCart`;
-    // }
+    findOne(id: string) {
+        return this.addressRepository.findOneBy({id: id });
+    }
 
-    // update(id: number, updateShoppingCartDto: UpdateShoppingCartDto) {
-    //     return `This action updates a #${id} shoppingCart`;
-    // }
+    async update(id: string, updateAddressDto: UpdateAddressDto) {
 
-    // remove(id: number) {
-    //     return `This action removes a #${id} shoppingCart`;
-    // }
+        const address = await this.addressRepository.preload({
+            id: id, 
+            ... updateAddressDto
+        });
+
+        if ( !address ) throw new NotFoundException(`Professional with id: ${ id } not found`);
+
+        try {
+            await this.addressRepository.save( address );
+            return address;
+        } catch (error) {
+            this.handleDBExceptions(error);
+        } 
+    }
+
+    async remove(id: string) {
+        const address = await this.findOne(id);
+        return this.addressRepository.delete(address);
+    }
+
+    private handleDBExceptions( error: any ) {
+
+        if ( error.code === '23505' )
+          throw new BadRequestException(error.detail);
+        
+        // console.log(error)
+        this.logger.error(error);
+        throw new InternalServerErrorException('Unexpected error, check server logs');
+    
+      }
 }

@@ -6,13 +6,11 @@ import { Address } from './entities/Address.entity';
 import { AddressController } from './controllers/address.controller';
 import { AddressService } from './services/address.service';
 import { AuthModule } from 'src/auth/auth.module';
-import { UserService } from 'src/auth/services/user.service';
 import { User } from 'src/auth/entities/user.entity';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([City, Department, Address, User]),
-    forwardRef(() => AuthModule),
   ],
   controllers: [AddressController],
   providers: [AddressService],
