@@ -1,4 +1,4 @@
-import { Column, Entity, ManyToMany, ManyToOne, PrimaryColumn } from "typeorm";
+import { Column, Entity, ManyToMany, ManyToOne, PrimaryColumn, PrimaryGeneratedColumn } from "typeorm";
 import { Department } from "./Department.entity";
 import { City } from "./City.entity";
 import { User } from "src/auth/entities/user.entity";
@@ -6,7 +6,10 @@ import { User } from "src/auth/entities/user.entity";
 @Entity()
 export class Address { 
 
-    @PrimaryColumn('text', {
+    @PrimaryGeneratedColumn('uuid')
+    id: string;
+
+    @Column('text', {
         nullable: false
     })
     address: string;
@@ -21,11 +24,13 @@ export class Address {
     })
     zip_code: string;
 
-    @ManyToOne(()=> City, (city) => city.addresses)
+    @ManyToOne(()=> City, (city) => city.addresses, {
+        nullable: false
+    })
     city: City;
 
     @ManyToOne(()=> User, (user) => user.addresses, {
-        nullable: true
+        nullable: false
     })
     user: User;
     
