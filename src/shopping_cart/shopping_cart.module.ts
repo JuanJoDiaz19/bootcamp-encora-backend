@@ -7,12 +7,13 @@ import { ShoppingCartItem } from './entities/shopping_cart_item.entity';
 import { ProductModule } from 'src/product/product.module';
 import { PaymentService } from './payment.service';
 import { ConfigModule } from '@nestjs/config';
+import { ShoppingCartStatus } from './entities/shopping_cart_status.entity';
 //import { CartItem } from './entities/shopping_cart_item.entity';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature(
-      [ShoppingCart, ShoppingCart, ShoppingCartItem]), ProductModule,ConfigModule,
+      [ShoppingCart, ShoppingCartStatus, ShoppingCartItem]), ProductModule,ConfigModule,
     ],
   controllers: [ShoppingCartController],
   providers: [ShoppingCartService, PaymentService],
