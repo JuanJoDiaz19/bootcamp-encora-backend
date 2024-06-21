@@ -1,13 +1,17 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { CreateOrderDto } from './dto/create-order.dto';
-import { UpdateOrderDto } from './dto/update-order.dto';
-import { Order } from './entities/order.entity';
-import { OrderItem } from './entities/order_item.entity';
+import { CreateOrderDto } from '../dto/create-order.dto';
+import { UpdateOrderDto } from '../dto/update-order.dto';
+import { Order } from '../entities/order.entity';
+import { OrderItem } from '../entities/order_item.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DeleteResult, Repository } from 'typeorm';
-import { CreateOrderItemDto } from './dto/create-order_item.dto';
-import { UpdateOrderItemDto } from './dto/update-order_item.dto';
+import { CreateOrderItemDto } from '../dto/create-order_item.dto';
+import { UpdateOrderItemDto } from '../dto/update-order_item.dto';
 import { ProductService } from 'src/product/product.service';
+import { CreateStatusDto } from '../dto/create-status.dto';
+import { Status } from '../entities/status.entity';
+import { PaymentMethod } from '../entities/payment_method.entity';
+import { UpdateStatusDto } from '../dto/update-status.dto';
 
 @Injectable()
 export class OrdersService {
@@ -17,6 +21,10 @@ export class OrdersService {
     private readonly orderRepository : Repository<Order>,
     @InjectRepository(OrderItem)
     private readonly orderItemsRepository: Repository<OrderItem>,
+    @InjectRepository(Status)
+    private readonly statusRepository: Repository<Status>,
+    @InjectRepository(PaymentMethod)
+    private readonly paymentMethodRepository: Repository<PaymentMethod>,
     private readonly productService : ProductService,
   ){}
 
@@ -207,6 +215,74 @@ export class OrdersService {
 
   async getOrderItemsByArrayIds(itemsIds:string[]): Promise<OrderItem[]>{
     return Promise.all(itemsIds.map(async item => await this.getOrderItemById(item)));
+  }
+
+  //CRUD STATUS
+
+  async createStatus(createStatusDto: CreateStatusDto): Promise<Status> {
+    try {
+      const name = createStatusDto.name;
+      const status = this.statusRepository.findOne({where:{name}})
+      if(status){
+        throw new Error(`El estado con nombre ${name} ya existe`);
+      }
+
+      const newStatus = this.statusRepository.create(createStatusDto);
+
+      return await this.statusRepository.save(newStatus);
+
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
+  }
+  
+  async getAllStatus(page: string, limit: string): Promise<[Status[], number]> {
+    const pageNumber = parseInt(page, 10);
+    const limitNumber = parseInt(limit, 10);
+
+    if (isNaN(pageNumber) || isNaN(limitNumber) || pageNumber <= 0 || limitNumber <= 0) {
+      throw new Error('La pagina y el limite deben ser numeros positivos');
+    }
+    return await this.statusRepository.findAndCount({
+      skip: (pageNumber - 1) * limitNumber,
+      take: limitNumber,
+      relations: {
+        orders:true,
+      },
+    })
+  }
+
+  async getStatusById(id: string): Promise<Status> {
+    try {
+      const status = await this.statusRepository.findOne({where:{id}});
+
+      if(!status){
+        throw new Error(`El estado con id ${id} no existe`);
+      }
+
+      return status;
+    } catch (error) {
+      throw new NotFoundException(error.message);
+    }
+  }
+
+  async updateStatus(id: string, updateStatusDto : UpdateStatusDto): Promise<Status> {
+    try {
+      const status = this.getStatusById(id);
+      const updateStatus = Object.assign(status,updateStatusDto);
+      return await this.statusRepository.save(updateStatus);
+    } catch (error) {
+      throw new NotFoundException(error.message);
+    }
+  }
+
+  async deleteStatus(id: string): Promise<DeleteResult> {
+    try {
+      const status = this.getStatusById(id);
+      return await this.statusRepository.delete(id);
+    } catch (error) {
+      throw new NotFoundException(error.message);
+    }
   }
 
 }

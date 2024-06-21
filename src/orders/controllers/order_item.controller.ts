@@ -1,9 +1,9 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
-import { OrdersService } from './orders.service';
+import { OrdersService } from '../services/orders.service';
 import { DeleteResult } from 'typeorm';
-import { CreateOrderItemDto } from './dto/create-order_item.dto';
-import { OrderItem } from './entities/order_item.entity';
-import { UpdateOrderItemDto } from './dto/update-order_item.dto';
+import { CreateOrderItemDto } from '../dto/create-order_item.dto';
+import { OrderItem } from '../entities/order_item.entity';
+import { UpdateOrderItemDto } from '../dto/update-order_item.dto';
 
 @Controller('orderItem')
 export class OrderItemController {
