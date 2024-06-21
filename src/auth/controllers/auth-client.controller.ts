@@ -14,15 +14,12 @@ export class AuthClientController {
   @Post('register')
   register(@Body() createAuthDto: CreateClientDto) {
     return this.authService.createClient(createAuthDto);
-}
-
+  }
 
   @Post('login')
   login(@Body() loginUserDto: LoginUserDto) {
     return this.authService.login(loginUserDto);
   }
-
-  
 
   @Get('status')
   @UseGuards(JwtAuthGuard)
@@ -32,11 +29,17 @@ export class AuthClientController {
     return req.user;
   }
 
+  @Get('verify_token')
+  verifyToken(@Req() req: Request) {
+    const token = req.headers.authorization.split(' ')[1];
+    return this.authService.verifyToken(token);
+  }
+
   @Get('test')
   @UseGuards(ClientGuard)
   test() {
     //console.log('Inside AuthController status method');
     //console.log(req.user);
-    return "hello world";
+    return 'hello world';
   }
 }
