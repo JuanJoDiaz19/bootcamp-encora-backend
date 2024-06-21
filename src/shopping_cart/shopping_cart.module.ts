@@ -4,14 +4,17 @@ import { ShoppingCartController } from './shopping_cart.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ShoppingCart } from './entities/shopping_cart.entity';
 import { ShoppingCartItem } from './entities/shopping_cart_item.entity';
+import { ProductModule } from 'src/product/product.module';
+import { PaymentService } from './payment.service';
+import { ConfigModule } from '@nestjs/config';
 //import { CartItem } from './entities/shopping_cart_item.entity';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature(
-      [ShoppingCart, ShoppingCart, ShoppingCartItem])
+      [ShoppingCart, ShoppingCart, ShoppingCartItem]), ProductModule,ConfigModule,
     ],
   controllers: [ShoppingCartController],
-  providers: [ShoppingCartService],
+  providers: [ShoppingCartService, PaymentService],
 })
 export class ShoppingCartModule {}

@@ -15,5 +15,6 @@ import { ReviewController } from './review.controller';
   imports: [TypeOrmModule.forFeature([Product,Category,Review,Stock, Group])],
   controllers: [ProductController, CategoryController, GroupController, ReviewController],
   providers: [ProductService],
+  exports: [ProductService],
 })
 export class ProductModule {}

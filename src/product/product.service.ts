@@ -3,7 +3,7 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Product } from './entities/product.entity';
-import { DeleteResult, Repository } from 'typeorm';
+import { DeleteResult, In, Repository } from 'typeorm';
 import { Category } from './entities/category.entity';
 import { Review } from './entities/review.entity';
 import { Stock } from './entities/stock.entity';
@@ -117,6 +117,29 @@ export class ProductService {
         throw new Error(`El producto con ID: ${id} no existe`);
       }
       return product;
+    } catch (error) {
+      throw new NotFoundException(error.message);
+    }
+  }
+
+  async getProductsByIds(ids: string[]): Promise<Product[]> {
+    try {
+      const products = await this.productRepository.find({
+        where: {
+          id: In(ids)
+        },
+        relations: {
+          category: true,
+          stock: true,
+          reviews: true
+        }
+      });
+  
+      if (products.length === 0) {
+        throw new Error(`No se encontraron productos con los IDs proporcionados`);
+      }
+  
+      return products;
     } catch (error) {
       throw new NotFoundException(error.message);
     }
