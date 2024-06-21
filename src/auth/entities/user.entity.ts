@@ -2,6 +2,8 @@ import { Column, Entity, JoinColumn, ManyToOne, OneToMany, OneToOne, PrimaryGene
 import { Role } from "./role.entity";
 import { Address } from "src/common/entities/Address.entity";
 import { ShoppingCart } from "src/shopping_cart/entities/shopping_cart.entity";
+import { Order } from "src/orders/entities/order.entity";
+
 
 @Entity()
 export class User { 
@@ -43,7 +45,11 @@ export class User {
     @OneToMany(() => Address, (address) => address.user)
     addresses: Address[];
 
+    @OneToMany(() => Order, (order) => order.user)
+    orders: Order[];
+
     // @OneToOne(() => ShoppingCart, (shoppingCart) => shoppingCart.user)
     // @JoinColumn()
     // shoppingCart: ShoppingCart;
+
 }
