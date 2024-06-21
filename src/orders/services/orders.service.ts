@@ -7,11 +7,13 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DeleteResult, Repository } from 'typeorm';
 import { CreateOrderItemDto } from '../dto/create-order_item.dto';
 import { UpdateOrderItemDto } from '../dto/update-order_item.dto';
-import { ProductService } from 'src/product/product.service';
+import { ProductService } from 'src/product/services/product.service';
 import { CreateStatusDto } from '../dto/create-status.dto';
 import { Status } from '../entities/status.entity';
 import { PaymentMethod } from '../entities/payment_method.entity';
 import { UpdateStatusDto } from '../dto/update-status.dto';
+import { UpdatePaymentMethodDto } from '../dto/update-payment_method.dto';
+import { CreatePaymentMethodDto } from '../dto/create-payment_method.dto';
 
 @Injectable()
 export class OrdersService {
@@ -237,19 +239,23 @@ export class OrdersService {
   }
   
   async getAllStatus(page: string, limit: string): Promise<[Status[], number]> {
-    const pageNumber = parseInt(page, 10);
-    const limitNumber = parseInt(limit, 10);
-
-    if (isNaN(pageNumber) || isNaN(limitNumber) || pageNumber <= 0 || limitNumber <= 0) {
-      throw new Error('La pagina y el limite deben ser numeros positivos');
+    try {
+      const pageNumber = parseInt(page, 10);
+      const limitNumber = parseInt(limit, 10);
+  
+      if (isNaN(pageNumber) || isNaN(limitNumber) || pageNumber <= 0 || limitNumber <= 0) {
+        throw new Error('La pagina y el limite deben ser numeros positivos');
+      }
+      return await this.statusRepository.findAndCount({
+        skip: (pageNumber - 1) * limitNumber,
+        take: limitNumber,
+        relations: {
+          orders:true,
+        },
+      })
+    } catch (error) {
+      throw new BadRequestException(error.message);
     }
-    return await this.statusRepository.findAndCount({
-      skip: (pageNumber - 1) * limitNumber,
-      take: limitNumber,
-      relations: {
-        orders:true,
-      },
-    })
   }
 
   async getStatusById(id: string): Promise<Status> {
@@ -280,6 +286,78 @@ export class OrdersService {
     try {
       const status = this.getStatusById(id);
       return await this.statusRepository.delete(id);
+    } catch (error) {
+      throw new NotFoundException(error.message);
+    }
+  }
+
+  //CRUD PAYMENT METHOD
+
+  async createPaymentMethod(createPaymentMethodDto: CreatePaymentMethodDto): Promise<PaymentMethod> {
+    try {
+      const name = createPaymentMethodDto.name;
+      const method = this.paymentMethodRepository.findOne({where:{name}})
+      if(method){
+        throw new Error(`El metodo de pago con nombre ${name} ya existe`);
+      }
+
+      const newPaymentMethod = this.paymentMethodRepository.create(createPaymentMethodDto);
+
+      return await this.paymentMethodRepository.save(newPaymentMethod);
+
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
+  }
+
+  async getAllPaymentMethods(page: string, limit: string): Promise<[PaymentMethod[], number]> {
+    try {
+      const pageNumber = parseInt(page, 10);
+      const limitNumber = parseInt(limit, 10);
+  
+      if (isNaN(pageNumber) || isNaN(limitNumber) || pageNumber <= 0 || limitNumber <= 0) {
+        throw new Error('La pagina y el limite deben ser numeros positivos');
+      }
+      return await this.paymentMethodRepository.findAndCount({
+        skip: (pageNumber - 1) * limitNumber,
+        take: limitNumber,
+        relations: {
+          orders:true,
+        },
+      })
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
+  }
+
+  async getPaymentMethodById(id: string): Promise<PaymentMethod> {
+    try {
+      const method = await this.paymentMethodRepository.findOne({where:{id}});
+
+      if(!method){
+        throw new Error(`El metodo de pago con id ${id} no existe`);
+      }
+
+      return method;
+    } catch (error) {
+      throw new NotFoundException(error.message);
+    }
+  }
+
+  async updatePaymentMethod(id: string, updatePaymentMethodDto: UpdatePaymentMethodDto): Promise<PaymentMethod> {
+    try {
+      const method = this.getPaymentMethodById(id);
+      const updatePaymentMethod = Object.assign(method,updatePaymentMethodDto);
+      return await this.paymentMethodRepository.save(updatePaymentMethod);
+    } catch (error) {
+      throw new NotFoundException(error.message);
+    }
+  }
+
+  async deletePaymentMethod(id: string): Promise<DeleteResult> {
+    try {
+      const status = this.getPaymentMethodById(id);
+      return await this.paymentMethodRepository.delete(id);
     } catch (error) {
       throw new NotFoundException(error.message);
     }

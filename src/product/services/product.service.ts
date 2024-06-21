@@ -1,19 +1,19 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { CreateProductDto } from './dto/create-product.dto';
-import { UpdateProductDto } from './dto/update-product.dto';
+import { CreateProductDto } from '../dto/create-product.dto';
+import { UpdateProductDto } from '../dto/update-product.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Product } from './entities/product.entity';
+import { Product } from '../entities/product.entity';
 import { DeleteResult, In, Repository } from 'typeorm';
-import { Category } from './entities/category.entity';
-import { Review } from './entities/review.entity';
-import { Stock } from './entities/stock.entity';
-import { CreateCategoryDto } from './dto/create-category.dto';
-import { UpdateCategoryDto } from './dto/update-category.dto';
-import { CreateGroupDto } from './dto/create-group.dto';
-import { UpdateGroupDto } from './dto/update-group.dto';
-import { Group } from './entities/group.entity';
-import { CreateReviewDto } from './dto/create-review.dto';
-import { UpdateReviewDto } from './dto/update-review.dto';
+import { Category } from '../entities/category.entity';
+import { Review } from '../entities/review.entity';
+import { Stock } from '../entities/stock.entity';
+import { CreateCategoryDto } from '../dto/create-category.dto';
+import { UpdateCategoryDto } from '../dto/update-category.dto';
+import { CreateGroupDto } from '../dto/create-group.dto';
+import { UpdateGroupDto } from '../dto/update-group.dto';
+import { Group } from '../entities/group.entity';
+import { CreateReviewDto } from '../dto/create-review.dto';
+import { UpdateReviewDto } from '../dto/update-review.dto';
 
 @Injectable()
 export class ProductService {
@@ -175,7 +175,7 @@ export class ProductService {
     }
   }
 
-  async getProductsByCategory(categoryName: string, page: string, limit: string ): Promise<[Product[], number]> {
+  async getProductsByCategory(categoryId: string, page: string, limit: string ): Promise<[Product[], number]> {
     try {
       const pageNumber = parseInt(page, 10);
       const limitNumber = parseInt(limit, 10);
@@ -184,7 +184,7 @@ export class ProductService {
         throw new Error('La pagina y el limite deben ser numeros positivos');
       }
 
-      const category =  await this.getCategoryByName(categoryName);
+      const category =  await this.getCategoryById(categoryId);
 
       const total = category.products.length;
   
@@ -240,7 +240,7 @@ export class ProductService {
       .filter(word => !commonArticles.includes(word));
   }
 
-  async getProductsByGroup(groupName: string, page: string, limit: string): Promise<[Product[], number]> {
+  async getProductsByGroup(groupId: string, page: string, limit: string): Promise<[Product[], number]> {
     try {
       const pageNumber = parseInt(page, 10);
       const limitNumber = parseInt(limit, 10);
@@ -248,12 +248,12 @@ export class ProductService {
       if (isNaN(pageNumber) || isNaN(limitNumber) || pageNumber <= 0 || limitNumber <= 0) {
         throw new Error('La pagina y el limite deben ser numeros positivos');
       }
-      const group: Group = await this.getGroupByName(groupName);
+      const group: Group = await this.getGroupById(groupId);
       const categories = group.categories;
       const products = [];
 
       for (const category of categories) {
-        const categoryProducts = await this.getCategoryByName(category.name);
+        const categoryProducts = await this.getCategoryById(category.id);
         products.push(...categoryProducts.products);
       }
       
@@ -276,7 +276,7 @@ export class ProductService {
         throw Error(`La categoria con nombre: ${categoryName} ya existe`);
       }
 
-      const group = await this.getGroupByName(createCategoryDto.groupName);
+      const group = await this.getGroupById(createCategoryDto.groupId);
 
       const newCategory = this.categoryRepository.create({
         ...createCategoryDto,
@@ -311,19 +311,19 @@ export class ProductService {
     }
   }
 
-  async updateCategory(categoryName: string, updateCategoryDto: UpdateCategoryDto): Promise<Category> {
+  async updateCategory(id: string, updateCategoryDto: UpdateCategoryDto): Promise<Category> {
     try {
 
-      const category = await this.getCategoryByName(categoryName);
+      const category = await this.getCategoryById(id);
 
       if(!category){
-        throw new Error(`No es posible actualizar la categoria con nombre ${categoryName}, ya que no existe`);
+        throw new Error(`No es posible actualizar la categoria con id ${id}, ya que no existe`);
       }
 
       let group;
-      const groupName = updateCategoryDto.groupName;
-      if(groupName){
-        group = this.getGroupByName(groupName);
+      const groupId = updateCategoryDto.groupId;
+      if(groupId){
+        group = this.getGroupById(groupId);
       }else{
         group = category.group;
       }
@@ -339,10 +339,10 @@ export class ProductService {
     }
   }
 
-  async getCategoryByName(categoryName: string): Promise<Category> {
+  async getCategoryById(categoryId: string): Promise<Category> {
     try {
       const category = await this.categoryRepository.findOne({
-        where:{name:categoryName},
+        where:{id:categoryId},
         relations:{
           products: {
             reviews: true
@@ -351,7 +351,7 @@ export class ProductService {
         }
       });
       if(!category){
-        throw new Error(`La categoria con nombre: ${categoryName} no existe`);
+        throw new Error(`La categoria con id: ${categoryId} no existe`);
       }
       return category;
     } catch (error) {
@@ -359,10 +359,10 @@ export class ProductService {
     }
   }
 
-  async deleteCategory(categoryName: string): Promise<DeleteResult> {
+  async deleteCategory(id: string): Promise<DeleteResult> {
     try {
-      const category = this.getCategoryByName(categoryName);
-      const result = await this.categoryRepository.delete(categoryName);
+      const category = this.getCategoryById(id);
+      const result = await this.categoryRepository.delete(id);
       return result;
     } catch (error) {
       throw new NotFoundException(error.message);
@@ -406,16 +406,16 @@ export class ProductService {
     }
   }
 
-  async getGroupByName(groupName: string): Promise<Group> {
+  async getGroupById(groupId: string): Promise<Group> {
     try {
       const group = await this.groupRepository.findOne({
-        where:{name:groupName},
+        where:{id:groupId},
         relations:{
           categories:true,
         }
       });
       if(!group){
-        throw new Error(`El grupo con nombre: ${groupName} no existe`);
+        throw new Error(`El grupo con el id: ${groupId} no existe`);
       }
       return group;
     } catch (error) {
@@ -423,12 +423,12 @@ export class ProductService {
     }
   }
 
-  async updateGroup(groupName: string, updateGroupDto: UpdateGroupDto): Promise<Group> {
+  async updateGroup(groupId: string, updateGroupDto: UpdateGroupDto): Promise<Group> {
     try {
-      const group = await this.getGroupByName(groupName);
+      const group = await this.getGroupById(groupId);
 
       if(!group){
-        throw new Error(`No es posible actualizar el grupo con nombre ${groupName}, ya que no existe`);
+        throw new Error(`No es posible actualizar el grupo con id ${groupId}, ya que no existe`);
       }
   
       const updateGroup = Object.assign(group, updateGroupDto);
@@ -438,10 +438,10 @@ export class ProductService {
     }
   }
 
-  async deleteGroup(groupName: string): Promise<DeleteResult> {
+  async deleteGroup(groupId: string): Promise<DeleteResult> {
     try {
-      const group = this.getGroupByName(groupName);
-      const result = await this.groupRepository.delete(groupName);
+      const group = this.getGroupById(groupId);
+      const result = await this.groupRepository.delete(groupId);
       return result;
     } catch (error) {
       throw new NotFoundException(error.message);

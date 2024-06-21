@@ -1,10 +1,10 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
-import { ProductService } from './product.service';
-import { CreateProductDto } from './dto/create-product.dto';
-import { UpdateProductDto } from './dto/update-product.dto';
-import { Product } from './entities/product.entity';
+import { ProductService } from '../services/product.service';
+import { CreateProductDto } from '../dto/create-product.dto';
+import { UpdateProductDto } from '../dto/update-product.dto';
+import { Product } from '../entities/product.entity';
 import { DeleteResult } from 'typeorm';
-import { InfoProductDto } from './dto/info-product.dto';
+import { InfoProductDto } from '../dto/info-product.dto';
 
 @Controller('product')
 export class ProductController {

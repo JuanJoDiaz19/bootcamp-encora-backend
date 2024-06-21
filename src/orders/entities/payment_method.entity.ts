@@ -9,6 +9,6 @@ export class PaymentMethod{
     @Column()
     name: string;
 
-    @OneToMany(()=>Order,(order)=>order.payment_method)
+    @OneToMany(()=>Order,(order)=>order.payment_method, {nullable:true})
     orders : Order[];
 }

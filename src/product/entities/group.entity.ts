@@ -1,9 +1,12 @@
-import { Column, Entity, OneToMany, PrimaryColumn } from "typeorm";
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { Category } from "./category.entity";
 
 @Entity()
 export class Group {
-    @PrimaryColumn()
+    @PrimaryGeneratedColumn('uuid')
+    id: string;
+
+    @Column({unique:true})
     name: string;
 
     @Column({nullable: true})
