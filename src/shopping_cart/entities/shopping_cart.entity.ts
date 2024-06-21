@@ -11,14 +11,13 @@ export class ShoppingCart {
     @OneToMany(() => ShoppingCartItem, (shopping_cart_item) => shopping_cart_item.shopping_cart)
     items: ShoppingCartItem[];
 
-    //@Column('float')
-    @Column()
+    @Column({ type: 'decimal', precision: 10, scale: 2})
     sub_total: number;
 
-    // @ManyToOne(() => ShoppingCartStatus)
-    // @JoinColumn({ name: 'status_id' })
-    // status: ShoppingCartStatus;
+    @ManyToOne(() => ShoppingCartStatus)
+    @JoinColumn({ name: 'status_id' })
+    status: ShoppingCartStatus;
 
-    // @OneToOne(() => User, (user) => user.shoppingCart)
-    // user: User;
+    @OneToOne(() => User, (user) => user.shoppingCart)
+    user: User;
 }

@@ -1,5 +1,6 @@
 import { Column, CreateDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 import { Product } from "./product.entity";
+import { User } from "src/auth/entities/user.entity";
 
 @Entity()
 export class Review {
@@ -11,6 +12,9 @@ export class Review {
 
     @Column()
     comment: string;
+
+    @ManyToOne(() => User, (user) => user.reviews)
+    user: User;
 
     @CreateDateColumn()
     publication_date: Date;

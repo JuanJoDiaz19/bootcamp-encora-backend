@@ -3,6 +3,7 @@ import { Role } from "./role.entity";
 import { Address } from "src/common/entities/Address.entity";
 import { ShoppingCart } from "src/shopping_cart/entities/shopping_cart.entity";
 import { Order } from "src/orders/entities/order.entity";
+import { Review } from "src/product/entities/review.entity";
 
 
 @Entity()
@@ -39,6 +40,9 @@ export class User {
     })
     birth_date: Date;
 
+    @OneToMany(() => Review, (review) => review.user)
+    reviews: Review[];
+
     @ManyToOne( () => Role, (role) => role.users)
     role: Role;
 
@@ -48,8 +52,8 @@ export class User {
     @OneToMany(() => Order, (order) => order.user)
     orders: Order[];
 
-    // @OneToOne(() => ShoppingCart, (shoppingCart) => shoppingCart.user)
-    // @JoinColumn()
-    // shoppingCart: ShoppingCart;
+    @OneToOne(() => ShoppingCart, (shoppingCart) => shoppingCart.user)
+    @JoinColumn()
+    shoppingCart: ShoppingCart;
 
 }
