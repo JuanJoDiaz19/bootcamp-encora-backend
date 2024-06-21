@@ -1,8 +1,7 @@
-import { IsArray, IsNotEmptyObject, IsObject } from "class-validator";
+import { IsArray, IsNotEmpty, IsObject, IsString } from "class-validator";
 
 export class CreateOrderDto {
-    @IsNotEmptyObject()
-    @IsObject()
+    @IsNotEmpty()
     @IsArray()
     itemsIds: string[];
 }

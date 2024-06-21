@@ -5,6 +5,9 @@ import { Order } from './entities/order.entity';
 import { OrderItem } from './entities/order_item.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DeleteResult, Repository } from 'typeorm';
+import { CreateOrderItemDto } from './dto/create-order_item.dto';
+import { UpdateOrderItemDto } from './dto/update-order_item.dto';
+import { ProductService } from 'src/product/product.service';
 
 @Injectable()
 export class OrdersService {
@@ -14,13 +17,14 @@ export class OrdersService {
     private readonly orderRepository : Repository<Order>,
     @InjectRepository(OrderItem)
     private readonly orderItemsRepository: Repository<OrderItem>,
+    private readonly productService : ProductService,
   ){}
 
   async create(createOrderDto: CreateOrderDto): Promise<Order> {
     try {
       let itemsIds = createOrderDto.itemsIds;
 
-      const items: OrderItem[] = await this.getItemsByArrayIds(itemsIds);
+      const items: OrderItem[] = await this.getOrderItemsByArrayIds(itemsIds);
 
       const total_price: number = this.calculateTotalPrice(items);
 
@@ -86,7 +90,7 @@ export class OrdersService {
       const itemsIds = updateOrderDto.itemsIds;
       let updateOrder:Order;
       if(itemsIds){
-        const items: OrderItem[] = await this.getItemsByArrayIds(itemsIds); 
+        const items: OrderItem[] = await this.getOrderItemsByArrayIds(itemsIds); 
         updateOrder = Object.assign(order,{
           ...updateOrderDto,
           items:items,
@@ -111,10 +115,48 @@ export class OrdersService {
   }
 
   //CRUD ORDER ITEMS
+  
+  async createOrderItem(createOrderItemDto: CreateOrderItemDto): Promise<OrderItem> {
+    try {
+      const id = createOrderItemDto.productId;
+      const product = await this.productService.getProductById(id);
+      if(!product){
+        throw new Error(`El producto con id ${id} no es posible asignarlo a un item de orden, ya que no existe`)
+      }
 
+      const newOrderItem = this.orderItemsRepository.create({
+        ...createOrderItemDto,
+        product,
+      })
 
+      return await this.orderItemsRepository.save(newOrderItem);
 
-  async getItemById(id: string): Promise<OrderItem> {
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
+  }
+
+  async getAllOrderItems(page: string, limit: string): Promise<[OrderItem[], number]> {
+    try {
+      const pageNumber = parseInt(page, 10);
+      const limitNumber = parseInt(limit, 10);
+
+      if (isNaN(pageNumber) || isNaN(limitNumber) || pageNumber <= 0 || limitNumber <= 0) {
+        throw new Error('La pagina y el limite deben ser numeros positivos');
+      }
+      return await this.orderItemsRepository.findAndCount({
+        skip: (pageNumber - 1) * limitNumber,
+        take: limitNumber,
+        relations: {
+          order:true,
+        },
+      })
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
+  }
+
+  async getOrderItemById(id: string): Promise<OrderItem> {
     try {
       const item: OrderItem = await this.orderItemsRepository.findOne({where:{id}});
 
@@ -128,8 +170,43 @@ export class OrdersService {
     }
   }
 
-  async getItemsByArrayIds(itemsIds:string[]): Promise<OrderItem[]>{
-    return Promise.all(itemsIds.map(async item => await this.getItemById(item)));
+  async updateOrderItem(id: string, updateOrderItemDto: UpdateOrderItemDto): Promise<OrderItem> {
+    try {
+      const orderItem = await this.getOrderItemById(id);
+      if (!orderItem) {
+        throw new Error(`El item de orden con id ${id} no existe`);
+      }
+      const productId = updateOrderItemDto.productId;
+      let updateOrderItem:OrderItem;
+      if (productId) {
+        const product = await this.productService.getProductById(id);
+        if(!product){
+          throw new Error(`El producto con id ${id} no es posible asignarlo a un item de orden, ya que no existe`)
+        }
+        updateOrderItem = Object.assign(orderItem,{
+          ...updateOrderItemDto,
+          product,
+        })
+      }else{
+        updateOrderItem = Object.assign(orderItem,updateOrderItemDto)
+      }
+      return await this.orderItemsRepository.save(updateOrderItem)
+    } catch (error) {
+      throw new NotFoundException(error.message);
+    }
+  }
+
+  async deleteOrderItem(id: string): Promise<DeleteResult> {
+    try {
+      const orderItem = await this.getOrderItemById(id);
+      return await this.orderItemsRepository.delete(id);
+    } catch (error) {
+      throw new NotFoundException(error.message);
+    }
+  }
+
+  async getOrderItemsByArrayIds(itemsIds:string[]): Promise<OrderItem[]>{
+    return Promise.all(itemsIds.map(async item => await this.getOrderItemById(item)));
   }
 
 }
