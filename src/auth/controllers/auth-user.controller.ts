@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
 import { Request } from 'express';
 import { JwtAuthGuard } from '../guards/jwt.guard';
 import { LoginUserDto } from '../dto/login-user.dto';
@@ -8,7 +8,7 @@ import { ClientGuard } from '../guards/client.guard';
 import { UserService } from '../services/user.service';
 
 @Controller('auth/client')
-export class AuthClientController {
+export class AuthUserController {
   constructor(private authService: UserService) {}
 
   @Post('register')
@@ -19,6 +19,19 @@ export class AuthClientController {
   @Post('login')
   login(@Body() loginUserDto: LoginUserDto) {
     return this.authService.login(loginUserDto);
+  }
+
+  @Get('password-recovery/:id_user')
+  async recoverPassword(@Param('id_user') id_user: string) {
+    try {
+      return await this.authService.recoverPassword(id_user);
+    } catch (error) {
+      return {
+        success: false,
+        message: 'An error occurred while recovering the password.',
+        error: error.message || error.toString(),
+      };
+    }
   }
 
   @Get('status')
