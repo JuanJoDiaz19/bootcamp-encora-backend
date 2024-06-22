@@ -1,13 +1,15 @@
-import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Put, Req, UseGuards } from '@nestjs/common';
 import { Request } from 'express';
 import { JwtAuthGuard } from '../guards/jwt.guard';
 import { LoginUserDto } from '../dto/login-user.dto';
-import { CreateUserDto } from '../dto/create-client.dto';
+import { CreateUserDto } from '../dto/create-user.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { ClientGuard } from '../guards/client.guard';
 import { UserService } from '../services/user.service';
+import { AdminGuard } from '../guards/admin.guard';
+import { UpdateUserDto } from '../dto/update-user.dto';
 
-@Controller('auth/')
+@Controller('user/')
 export class AuthUserController {
   constructor(private authService: UserService) {}
 
@@ -21,7 +23,7 @@ export class AuthUserController {
     return this.authService.login(loginUserDto);
   }
 
-  @Get('password-recovery/:id_user')
+  @Post('password-recovery/:id_user')
   async recoverPassword(@Param('id_user') id_user: string) {
     try {
       return await this.authService.recoverPassword(id_user);
@@ -40,6 +42,24 @@ export class AuthUserController {
     //console.log('Inside AuthController status method');
     //console.log(req.user);
     return req.user;
+  }
+
+  @Get('')
+  @UseGuards(AdminGuard)
+  retriveAllUsers() {
+    return this.authService.retriveAllUsers();
+  }
+
+  @Put(':id_user')
+  @UseGuards(AdminGuard)
+  updateUser(@Body() updateUserDto: UpdateUserDto, @Param('id_user') id_user: string) {
+    return this.authService.updateUser(updateUserDto, id_user);
+  }
+
+  @Get(':id_user')
+  @UseGuards(AdminGuard)
+  searchById( @Param('id_user') id_user: string) {
+    return this.authService.findUserById( id_user);
   }
 
   @Get('verify_token')

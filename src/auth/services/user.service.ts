@@ -5,9 +5,10 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { User } from '../entities/user.entity';
 import { LoginUserDto } from '../dto/login-user.dto';
-import { CreateUserDto } from '../dto/create-client.dto';
+import { CreateUserDto } from '../dto/create-user.dto';
 import { Role } from '../entities/role.entity';
 import { MailerService } from '@nestjs-modules/mailer';
+import { UpdateUserDto } from '../dto/update-user.dto';
 
 @Injectable()
 export class UserService {
@@ -188,6 +189,25 @@ export class UserService {
 
   }
 
+  async updateUser(updateUserDto: UpdateUserDto, id_user: string) {
+
+    const {role, ...userToUpdate} = updateUserDto; 
+
+    const user = await this.userRepository.preload({
+        id: id_user, 
+        ...userToUpdate
+    });
+
+    if ( !user ) throw new NotFoundException(`Professional with id: ${ id_user } not found`);
+
+        try {
+            await this.userRepository.save( user );
+            return user;
+        } catch (error) {
+            this.handleDBErrors(error);
+        }
+  }
+
   async findUserById( id_user: string) {
 
     try {
@@ -224,6 +244,10 @@ export class UserService {
 
     throw new InternalServerErrorException('Please check server logs');
 
+  }
+
+  async retriveAllUsers() {
+    return this.userRepository.find();
   }
 
   async verifyToken(token: string) {
