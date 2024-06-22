@@ -7,11 +7,18 @@ import { OrdersModule } from './orders/orders.module';
 import { ShoppingCartModule } from './shopping_cart/shopping_cart.module';
 import { ProductModule } from './product/product.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { MailerModule } from '@nestjs-modules/mailer';
 
 @Module({
   imports: [
     ConfigModule.forRoot(),
+    MailerModule.forRoot({
+      transport: 'smtps://fitnestcorp@gmail.com:qnew upcg tcbv nggs@smtp.gmail.com',
+      defaults: {
+        from: '"Fitnest Corp" <fitnestcorp@gmail.com>',
+      }
+    }),
     TypeOrmModule.forRoot({
       type: 'postgres', 
       host: process.env.DB_HOST,
