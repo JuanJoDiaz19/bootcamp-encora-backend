@@ -20,33 +20,8 @@ export class UserService {
     private readonly mailerService: MailerService
   ) {}
 
-  async createAdmin(createUserDto: CreateUserDto) {
-    try {
-      const { password, ...userData } = createUserDto;
 
-      const clientRole = await this.roleRepository.findOne({
-        where: { role: 'ADMIN' },
-      });
-
-      const user = this.userRepository.create({
-        ...userData,
-        password: bcrypt.hashSync(password, 10),
-        role: clientRole,
-      });
-
-      await this.userRepository.save(user);
-
-      return {
-        ...user,
-        token: this.jwtService.sign({ id: user.id }),
-      };
-    } catch (error) {
-      this.handleDBErrors(error);
-    }
-
-  }
-
-  async createClient(createUserDto: CreateUserDto) {
+  async createUser(createUserDto: CreateUserDto) {
     try {
       const { password, ...userData } = createUserDto;
 

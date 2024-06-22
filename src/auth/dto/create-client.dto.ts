@@ -1,7 +1,7 @@
 import { IsEmail, IsOptional, IsPhoneNumber, IsString, Matches, MaxLength, MinLength } from 'class-validator';
 
 
-export class CreateClientDto {
+export class CreateUserDto {
 
     @IsEmail()
     @IsString()
@@ -21,6 +21,9 @@ export class CreateClientDto {
         message: 'The password must have a Uppercase, lowercase letter and a number'
     })
     password: string;
+
+    @IsString()
+    role:string;
 
     @IsString()
     @IsOptional()
