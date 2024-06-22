@@ -14,8 +14,7 @@ export class AuthUserController {
   @Post('register')
   register(@Body() createAuthDto: CreateClientDto) {
     return this.authService.createClient(createAuthDto);
-}
-
+  }
 
   @Post('login')
   login(@Body() loginUserDto: LoginUserDto) {
@@ -35,9 +34,6 @@ export class AuthUserController {
     }
   }
 
-
-  
-
   @Get('status')
   @UseGuards(JwtAuthGuard)
   status(@Req() req: Request) {
@@ -46,11 +42,17 @@ export class AuthUserController {
     return req.user;
   }
 
+  @Get('verify_token')
+  verifyToken(@Req() req: Request) {
+    const token = req.headers.authorization.split(' ')[1];
+    return this.authService.verifyToken(token);
+  }
+
   @Get('test')
   @UseGuards(ClientGuard)
   test() {
     //console.log('Inside AuthController status method');
     //console.log(req.user);
-    return "hello world";
+    return 'hello world';
   }
 }

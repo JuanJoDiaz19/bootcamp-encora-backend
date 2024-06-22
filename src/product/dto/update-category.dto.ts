@@ -1,6 +1,6 @@
 import { PartialType } from '@nestjs/mapped-types';
 import { CreateCategoryDto } from './create-category.dto';
-import { IsOptional, IsString } from 'class-validator';
+import { IsOptional, IsString, IsUUID } from 'class-validator';
 
 export class UpdateCategoryDto extends PartialType(CreateCategoryDto) {
 
@@ -13,8 +13,8 @@ export class UpdateCategoryDto extends PartialType(CreateCategoryDto) {
     description: string;
 
     @IsOptional()
-    @IsString()
-    groupName: string;
+    @IsUUID()
+    groupId: string;
 
     @IsOptional()
     @IsString()

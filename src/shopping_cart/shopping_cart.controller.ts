@@ -3,13 +3,13 @@ import { ShoppingCartService } from './shopping_cart.service';
 import { CreateShoppingCartDto } from './dto/create-shopping_cart.dto';
 import { UpdateShoppingCartDto } from './dto/update-shopping_cart.dto';
 
-@Controller('shopping-cart')
+@Controller('shoppingcart')
 export class ShoppingCartController {
   constructor(private readonly shoppingCartService: ShoppingCartService) {}
 
   @Post()
-  create(@Body() createShoppingCartDto: CreateShoppingCartDto) {
-    return this.shoppingCartService.create(createShoppingCartDto);
+  create() {
+    return this.shoppingCartService.createShoppingCart();
   }
 
   @Get()
@@ -19,16 +19,16 @@ export class ShoppingCartController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.shoppingCartService.findOne(+id);
+    return this.shoppingCartService.findOne(id);
   }
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateShoppingCartDto: UpdateShoppingCartDto) {
-    return this.shoppingCartService.update(+id, updateShoppingCartDto);
+    return this.shoppingCartService.update(id, updateShoppingCartDto);
   }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.shoppingCartService.remove(+id);
+    return this.shoppingCartService.remove(id);
   }
 }

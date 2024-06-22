@@ -1,6 +1,6 @@
 import { PartialType } from '@nestjs/mapped-types';
 import { CreateOrderDto } from './create-order.dto';
-import { IsArray, IsDate, IsObject, IsOptional } from 'class-validator';
+import { IsArray, IsDate, IsOptional } from 'class-validator';
 
 export class UpdateOrderDto extends PartialType(CreateOrderDto) {
 
@@ -13,7 +13,6 @@ export class UpdateOrderDto extends PartialType(CreateOrderDto) {
     received_date: Date;
 
     @IsOptional()
-    @IsObject()
     @IsArray()
     itemsIds: string[];
 }

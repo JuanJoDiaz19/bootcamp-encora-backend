@@ -1,10 +1,10 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
-import { ProductService } from './product.service';
-import { CreateProductDto } from './dto/create-product.dto';
-import { UpdateProductDto } from './dto/update-product.dto';
-import { Product } from './entities/product.entity';
+import { ProductService } from '../services/product.service';
+import { CreateProductDto } from '../dto/create-product.dto';
+import { UpdateProductDto } from '../dto/update-product.dto';
+import { Product } from '../entities/product.entity';
 import { DeleteResult } from 'typeorm';
-import { InfoProductDto } from './dto/info-product.dto';
+import { InfoProductDto } from '../dto/info-product.dto';
 
 @Controller('product')
 export class ProductController {
@@ -60,17 +60,17 @@ export class ProductController {
   }
 
   // FILTERS
-  @Get('category/:name')
+  @Get('filter/category/:name')
   getProductsByCategory(@Param('name') category: string, @Query('page') page: string, @Query('limit') limit: string):Promise<[Product[], number]>{
     return this.productService.getProductsByCategory(category, page, limit);
   }
 
-  @Get('search')
+  @Get('filter/search')
   searchProducts(@Query('keyword') keyword: string, @Query('page') page: string, @Query('limit') limit: string): Promise<[Product[], number]>{
     return this.productService.searchProducts(keyword,page,limit);
   }
 
-  @Get('group/:name')
+  @Get('filter/group/:name')
   getProductsByGroup(@Param('name') groupName: string, @Query('page') page: string, @Query('limit') limit: string):Promise<[Product[],number]>{
     return this.productService.getProductsByGroup(groupName, page, limit);
   }

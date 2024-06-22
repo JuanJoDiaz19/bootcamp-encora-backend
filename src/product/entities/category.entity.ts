@@ -1,10 +1,14 @@
-import { Column, Entity, ManyToMany, ManyToOne, OneToMany, PrimaryColumn } from "typeorm";
+import { Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { Product } from "./product.entity";
 import { Group } from "./group.entity";
 
 @Entity()
 export class Category {
-    @PrimaryColumn()
+
+    @PrimaryGeneratedColumn('uuid')
+    id: string;
+
+    @Column({unique:true})
     name: string;
 
     @Column({nullable: true})

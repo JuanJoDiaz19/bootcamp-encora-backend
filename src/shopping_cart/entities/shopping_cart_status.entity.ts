@@ -1,11 +1,10 @@
-import { Product } from "src/product/entities/product.entity";
-import { Column, Entity, JoinColumn, ManyToOne, OneToOne, PrimaryGeneratedColumn } from "typeorm";
-import { ShoppingCart } from "./shopping_cart.entity";
+import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
 
 @Entity()
 export class ShoppingCartStatus {
+    @PrimaryGeneratedColumn('uuid')
+    id: string;
 
     @Column()
-    shopping_cart_status: string;
-    
+    status: string;
 }

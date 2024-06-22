@@ -1,18 +1,23 @@
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, OneToMany, ManyToOne, JoinColumn, PrimaryGeneratedColumn, OneToOne } from "typeorm";
 import { ShoppingCartItem } from "./shopping_cart_item.entity";
+import { ShoppingCartStatus } from "./shopping_cart_status.entity";
+import { User } from "src/auth/entities/user.entity";
 
 @Entity()
 export class ShoppingCart {
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
-    @OneToMany(()=>ShoppingCartItem, (shopping_cart_item)=>shopping_cart_item.shopping_cart)
+    @OneToMany(() => ShoppingCartItem, (shopping_cart_item) => shopping_cart_item.shopping_cart)
     items: ShoppingCartItem[];
 
-    @Column()
+    @Column({ type: 'decimal', precision: 10, scale: 2})
     sub_total: number;
 
-    //ToDo (Relación con ShoppingCartStatus)
-    @Column()
-    status: string;
+    @ManyToOne(() => ShoppingCartStatus)
+    @JoinColumn({ name: 'status_id' })
+    status: ShoppingCartStatus;
+
+    @OneToOne(() => User, (user) => user.shoppingCart)
+    user: User;
 }
