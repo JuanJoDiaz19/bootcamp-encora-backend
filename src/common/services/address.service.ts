@@ -55,7 +55,7 @@ export class AddressService {
             ... updateAddressDto
         });
 
-        if ( !address ) throw new NotFoundException(`Professional with id: ${ id } not found`);
+        if ( !address ) throw new NotFoundException(`Address with id: ${ id } not found`);
 
         try {
             await this.addressRepository.save( address );
