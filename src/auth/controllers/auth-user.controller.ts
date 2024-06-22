@@ -2,18 +2,18 @@ import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/comm
 import { Request } from 'express';
 import { JwtAuthGuard } from '../guards/jwt.guard';
 import { LoginUserDto } from '../dto/login-user.dto';
-import { CreateClientDto } from '../dto/create-client.dto';
+import { CreateUserDto } from '../dto/create-client.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { ClientGuard } from '../guards/client.guard';
 import { UserService } from '../services/user.service';
 
-@Controller('auth/client')
+@Controller('auth/')
 export class AuthUserController {
   constructor(private authService: UserService) {}
 
   @Post('register')
-  register(@Body() createAuthDto: CreateClientDto) {
-    return this.authService.createClient(createAuthDto);
+  register(@Body() createAuthDto: CreateUserDto) {
+    return this.authService.createUser(createAuthDto);
   }
 
   @Post('login')
