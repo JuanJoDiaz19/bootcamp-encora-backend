@@ -5,7 +5,7 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { User } from '../entities/user.entity';
 import { LoginUserDto } from '../dto/login-user.dto';
-import { CreateClientDto } from '../dto/create-client.dto';
+import { CreateUserDto } from '../dto/create-client.dto';
 import { Role } from '../entities/role.entity';
 import { MailerService } from '@nestjs-modules/mailer';
 
@@ -20,38 +20,13 @@ export class UserService {
     private readonly mailerService: MailerService
   ) {}
 
-  async createAdmin(createUserDto: CreateClientDto) {
+
+  async createUser(createUserDto: CreateUserDto) {
     try {
       const { password, ...userData } = createUserDto;
 
       const clientRole = await this.roleRepository.findOne({
-        where: { role: 'ADMIN' },
-      });
-
-      const user = this.userRepository.create({
-        ...userData,
-        password: bcrypt.hashSync(password, 10),
-        role: clientRole,
-      });
-
-      await this.userRepository.save(user);
-
-      return {
-        ...user,
-        token: this.jwtService.sign({ id: user.id }),
-      };
-    } catch (error) {
-      this.handleDBErrors(error);
-    }
-
-  }
-
-  async createClient(createUserDto: CreateClientDto) {
-    try {
-      const { password, ...userData } = createUserDto;
-
-      const clientRole = await this.roleRepository.findOne({
-        where: { role: 'CLIENT' },
+        where: { role: createUserDto.role },
       });
 
       const user = this.userRepository.create({
