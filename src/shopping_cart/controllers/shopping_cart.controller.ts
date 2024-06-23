@@ -24,6 +24,11 @@ export class ShoppingCartController {
     return this.shoppingCartService.findOne(id);
   }
 
+  @Get('user/:userId')
+  findOneByUser(@Param('userId') userId: string) {
+    return this.shoppingCartService.findOneByUser(userId);
+  }
+
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateShoppingCartDto: UpdateShoppingCartDto): Promise<ShoppingCart> {
     return this.shoppingCartService.update(id, updateShoppingCartDto);
