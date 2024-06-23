@@ -1,12 +1,13 @@
 import { Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
-import { CreateShoppingCartDto } from './dto/create-shopping_cart.dto';
-import { UpdateShoppingCartDto } from './dto/update-shopping_cart.dto';
-import { ShoppingCart } from './entities/shopping_cart.entity';
+import { CreateShoppingCartDto } from '../dto/create-shopping_cart.dto';
+import { UpdateShoppingCartDto } from '../dto/update-shopping_cart.dto';
+import { ShoppingCart } from '../entities/shopping_cart.entity';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ShoppingCartItem } from './entities/shopping_cart_item.entity';
+import { ShoppingCartItem } from '../entities/shopping_cart_item.entity';
 import { ProductService } from 'src/product/services/product.service';
 import { PaymentService } from './payment.service';
+import { OrdersService } from 'src/orders/services/orders.service';
 
 @Injectable()
 export class ShoppingCartService {
@@ -17,6 +18,7 @@ export class ShoppingCartService {
   private readonly shoppingCartItemRepository: Repository<ShoppingCartItem>,
   private readonly productService: ProductService,
   private readonly paymentService: PaymentService,
+  private readonly orderService: OrdersService,
   ){}
   
   
@@ -117,13 +119,14 @@ export class ShoppingCartService {
       throw new InternalServerErrorException('Error emptying shopping cart');
     }
   }
+  
   async buy(shoppingCartId: string){
     const shoppingCart = await this.shoppingCartRepository.findOne({
       where: { id: shoppingCartId },
       relations: ['items', 'items.product'],
     });
-    //const order = ??
-    //const response = this.paymentService.generatePaymentLink(shoppingCart.sub_total,order.id,shoppingCart.user.email)
+    const order = await this.orderService.createOrderWithShoppingCartItems(shoppingCart.items);
+    const response = this.paymentService.generatePaymentLink(shoppingCart.sub_total,order.id,shoppingCart.user.email)
   }
 }
 

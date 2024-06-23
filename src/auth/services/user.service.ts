@@ -9,7 +9,7 @@ import { CreateUserDto } from '../dto/create-user.dto';
 import { Role } from '../entities/role.entity';
 import { MailerService } from '@nestjs-modules/mailer';
 import { UpdateUserDto } from '../dto/update-user.dto';
-import { ShoppingCartService } from 'src/shopping_cart/shopping_cart.service';
+import { ShoppingCartService } from 'src/shopping_cart/services/shopping_cart.service';
 
 @Injectable()
 export class UserService {

@@ -14,6 +14,7 @@ import { PaymentMethod } from '../entities/payment_method.entity';
 import { UpdateStatusDto } from '../dto/update-status.dto';
 import { UpdatePaymentMethodDto } from '../dto/update-payment_method.dto';
 import { CreatePaymentMethodDto } from '../dto/create-payment_method.dto';
+import { ShoppingCartItem } from 'src/shopping_cart/entities/shopping_cart_item.entity';
 
 @Injectable()
 export class OrdersService {
@@ -121,6 +122,26 @@ export class OrdersService {
       return this.orderRepository.delete(id);
     } catch (error) {
       throw new NotFoundException(error.message);
+    }
+  }
+
+  async createOrderWithShoppingCartItems(cartItems:ShoppingCartItem[]):Promise<Order>{
+    try {
+
+      const orderItems: string[] = await Promise.all(cartItems.map(async cartItem => {
+        const { id } = await this.createOrderItem({
+          quantity: cartItem.quantity,
+          productId: cartItem.product.id
+        });
+        return id;
+      }));
+
+      const order : Order = await this.create({itemsIds:orderItems});
+
+      return order;
+      
+    } catch (error) {
+      throw new BadRequestException(error.message);
     }
   }
 
