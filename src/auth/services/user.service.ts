@@ -9,6 +9,7 @@ import { CreateUserDto } from '../dto/create-user.dto';
 import { Role } from '../entities/role.entity';
 import { MailerService } from '@nestjs-modules/mailer';
 import { UpdateUserDto } from '../dto/update-user.dto';
+import { ShoppingCartService } from 'src/shopping_cart/shopping_cart.service';
 
 @Injectable()
 export class UserService {
@@ -18,7 +19,8 @@ export class UserService {
     @InjectRepository(Role)
     private readonly roleRepository: Repository<Role>,
     private readonly jwtService: JwtService,
-    private readonly mailerService: MailerService
+    private readonly mailerService: MailerService,
+    private readonly shoppinCartService: ShoppingCartService,
   ) {}
 
 
@@ -30,10 +32,13 @@ export class UserService {
         where: { role: createUserDto.role },
       });
 
+      const newCart = await this.shoppinCartService.createShoppingCart();
+
       const user = this.userRepository.create({
         ...userData,
         password: bcrypt.hashSync(password, 10),
         role: clientRole,
+        shoppingCart:newCart,
       });
 
       await this.userRepository.save(user);

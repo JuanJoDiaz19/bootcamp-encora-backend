@@ -515,6 +515,7 @@ export class ProductService {
       const review = await this.reviewRepository.findOne({
         where:{id},
         relations:{
+          user:true,
           product:true,
         }
       });

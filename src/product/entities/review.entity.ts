@@ -7,6 +7,9 @@ export class Review {
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
+    @Column()
+    title: string;
+
     @Column('float')
     score: number;
 

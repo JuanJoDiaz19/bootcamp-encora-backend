@@ -4,6 +4,7 @@ import { DeleteResult } from 'typeorm';
 import { Review } from '../entities/review.entity';
 import { CreateReviewDto } from '../dto/create-review.dto';
 import { UpdateReviewDto } from '../dto/update-review.dto';
+import { InfoReviewDto } from '../dto/info-review.dto';
 
 @Controller('review')
 export class ReviewController {
@@ -19,9 +20,23 @@ export class ReviewController {
     return this.productService.getAllReviews(page,limit);
   }
 
+  @Get('info')
+  async getAllReviewsInfo(@Query('page') page: string, @Query('limit') limit: string): Promise<[InfoReviewDto[], number]> {
+    const [reviews, total] = await this.productService.getAllReviews(page, limit);
+    const infoReviews: InfoReviewDto[] = reviews.map(review => new InfoReviewDto(review));
+    return [infoReviews, total];
+  }
+
   @Get(':id')
   getReviewById(@Param('id') id: string): Promise<Review>{
     return this.productService.getReviewById(id);
+  }
+
+  @Get('info/:id')
+  async getInfoReviewById(@Param('id') id: string): Promise<InfoReviewDto>{
+    const review = await this.productService.getReviewById(id);
+    const infoReview = new InfoReviewDto(review);
+    return infoReview;
   }
 
   @Patch(':id')

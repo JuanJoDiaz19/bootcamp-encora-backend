@@ -12,6 +12,7 @@ import { CommonModule } from 'src/common/common.module';
 import { UserService } from './services/user.service';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { AuthUserController } from './controllers/auth-user.controller';
+import { ShoppingCartModule } from 'src/shopping_cart/shopping_cart.module';
 
 @Module({
     imports: [
@@ -25,6 +26,7 @@ import { AuthUserController } from './controllers/auth-user.controller';
             })
           }), 
         TypeOrmModule.forFeature([User, Role]),
+        ShoppingCartModule,
     ],
     controllers: [AuthUserController],
     providers: [ UserService, AdminStrategy, JwtStrategy, ClientStrategy ]

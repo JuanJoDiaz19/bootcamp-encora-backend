@@ -17,5 +17,6 @@ import { ShoppingCartStatus } from './entities/shopping_cart_status.entity';
     ],
   controllers: [ShoppingCartController],
   providers: [ShoppingCartService, PaymentService],
+  exports:[ShoppingCartService],
 })
 export class ShoppingCartModule {}
