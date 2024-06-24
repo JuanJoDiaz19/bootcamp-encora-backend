@@ -10,9 +10,13 @@ import { Group } from './entities/group.entity';
 import { CategoryController } from './controllers/category.controller';
 import { GroupController } from './controllers/group.controller';
 import { ReviewController } from './controllers/review.controller';
+import { MulterModule } from '@nestjs/platform-express';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Product,Category,Review,Stock, Group])],
+  imports: [
+    TypeOrmModule.forFeature([Product,Category,Review,Stock, Group]),
+    MulterModule
+  ],
   controllers: [ProductController, CategoryController, GroupController, ReviewController],
   providers: [ProductService],
   exports: [ProductService],

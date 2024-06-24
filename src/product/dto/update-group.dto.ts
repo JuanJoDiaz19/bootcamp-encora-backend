@@ -14,5 +14,5 @@ export class UpdateGroupDto extends PartialType(CreateGroupDto) {
 
     @IsOptional()
     @IsString()
-    url: string;
+    image_url: string;
 }

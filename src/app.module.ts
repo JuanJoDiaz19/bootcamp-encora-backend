@@ -12,11 +12,13 @@ import { MailerModule } from '@nestjs-modules/mailer';
 
 @Module({
   imports: [
-    ConfigModule.forRoot(),
+    ConfigModule.forRoot({
+      isGlobal: true
+    }),
     MailerModule.forRoot({
-      transport: 'smtps://fitnestcorp@gmail.com:qnew upcg tcbv nggs@smtp.gmail.com',
+      transport: `smtps://${process.env.MAIL_USER}:${process.env.MAIL_PASS}@${process.env.MAIL_HOST}`,
       defaults: {
-        from: '"Fitnest Corp" <fitnestcorp@gmail.com>',
+        from: `Fitnest Corp" <${process.env.MAIL_USER}>`,
       }
     }),
     TypeOrmModule.forRoot({

@@ -1,6 +1,7 @@
 import { IsNotEmpty, IsString } from "class-validator";
 
 export class CreateGroupDto{
+
     @IsNotEmpty()
     @IsString()
     name: string;
@@ -9,7 +10,6 @@ export class CreateGroupDto{
     @IsString()
     description: string;
 
-    @IsNotEmpty()
     @IsString()
-    url: string;
+    image_url: string;
 }

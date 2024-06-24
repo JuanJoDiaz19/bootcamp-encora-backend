@@ -30,7 +30,7 @@ export class Product {
     rating: number;
 
     @Column('text', { array: true })
-    image_url:string[];
+    image_urls:string[];
 
     @ManyToOne(() => Category, (category) => category.products)
     category: Category;
