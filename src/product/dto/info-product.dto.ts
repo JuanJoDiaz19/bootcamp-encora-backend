@@ -5,7 +5,7 @@ export class InfoProductDto {
     name: string;
     description: string;
     price: number;
-    image_url:string[];
+    image_urls:string[];
     category: string;
     stock: number;
 
@@ -14,7 +14,7 @@ export class InfoProductDto {
         this.name = product.name;
         this.description = product.description;
         this.price = product.price;
-        this.image_url = product.image_url;
+        this.image_urls = product.image_urls;
         this.category = product.category.name;
         this.stock = product.stock.stock;
     }

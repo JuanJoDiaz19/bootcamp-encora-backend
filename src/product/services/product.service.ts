@@ -14,11 +14,18 @@ import { UpdateGroupDto } from '../dto/update-group.dto';
 import { Group } from '../entities/group.entity';
 import { CreateReviewDto } from '../dto/create-review.dto';
 import { UpdateReviewDto } from '../dto/update-review.dto';
+import { ConfigService } from '@nestjs/config';
+import { PutObjectAclCommand, PutObjectCommand, S3Client} from '@aws-sdk/client-s3'
 
 @Injectable()
 export class ProductService {
 
+  private readonly s3Client = new S3Client(
+    {region: this.configService.getOrThrow('AWS_S3_REGION') }
+  );
+
   constructor(
+    private readonly configService: ConfigService,
     @InjectRepository(Product)
     private readonly productRepository: Repository<Product>,
     @InjectRepository(Category)
@@ -31,8 +38,25 @@ export class ProductService {
     private readonly groupRepository: Repository<Group>,
   ){}
 
-  async createProduct(createProductDto: CreateProductDto): Promise<Product> {
+  async createProduct(createProductDto: CreateProductDto, product_images: Array<Express.Multer.File>): Promise<Product> {
+    
+    createProductDto.image_urls = [];
+    
     try{
+
+      await Promise.all(product_images.map(async (product_image) => {
+        await this.s3Client.send(
+          new PutObjectCommand({
+            Bucket: 'fitnest-bucket',
+            Key: product_image.originalname,
+            Body: product_image.buffer,
+          })
+        );
+
+        const image_url = `https://fitnest-bucket.s3.amazonaws.com/${product_image.originalname}`;
+        createProductDto.image_urls.push(image_url);
+      }));
+
       const category: Category = await this.categoryRepository.findOne({where:{name: createProductDto.category}});
 
       if(!category){
@@ -145,8 +169,25 @@ export class ProductService {
     }
   }
 
-  async updateProduct(id: string, updateProductDto: UpdateProductDto): Promise<Product> {
+  async updateProduct(id: string, updateProductDto: UpdateProductDto, product_images: Array<Express.Multer.File>): Promise<Product> {
+    
+    updateProductDto.image_urls = []
+
     try {
+
+      await Promise.all(product_images.map(async (product_image) => {
+        await this.s3Client.send(
+          new PutObjectCommand({
+            Bucket: 'fitnest-bucket',
+            Key: product_image.originalname,
+            Body: product_image.buffer,
+          })
+        );
+
+        const image_url = `https://fitnest-bucket.s3.amazonaws.com/${product_image.originalname}`;
+        updateProductDto.image_urls.push(image_url);
+      }));
+
       const product = await this.getProductById(id);
 
       if(!product){
@@ -268,10 +309,23 @@ export class ProductService {
   }
 
   // CRUD CATEGORIES
-  async createCategory(createCategoryDto:CreateCategoryDto): Promise<Category>{
+  async createCategory(createCategoryDto:CreateCategoryDto, category_image: Express.Multer.File): Promise<Category>{
     try {
+
+      await this.s3Client.send(
+        new PutObjectCommand({
+          Bucket: 'fitnest-bucket',
+          Key: category_image.originalname,
+          Body: category_image.buffer,
+        })
+      );
+  
+      const image_url = `https://fitnest-bucket.s3.amazonaws.com/${category_image.originalname}`;
+      createCategoryDto.image_url = image_url;
+
       const categoryName = createCategoryDto.name;
       const category = await this.categoryRepository.findOne({where:{name:categoryName}});
+      
       if(category){
         throw Error(`La categoria con nombre: ${categoryName} ya existe`);
       }
@@ -311,8 +365,20 @@ export class ProductService {
     }
   }
 
-  async updateCategory(id: string, updateCategoryDto: UpdateCategoryDto): Promise<Category> {
+  async updateCategory(id: string, updateCategoryDto: UpdateCategoryDto, category_image: Express.Multer.File): Promise<Category> {
     try {
+      if(category_image){
+        await this.s3Client.send(
+          new PutObjectCommand({
+            Bucket: 'fitnest-bucket',
+            Key: category_image.originalname,
+            Body: category_image.buffer,
+          })
+        );
+    
+        const image_url = `https://fitnest-bucket.s3.amazonaws.com/${category_image.originalname}`;
+        updateCategoryDto.image_url = image_url;
+      }
 
       const category = await this.getCategoryById(id);
 
@@ -371,8 +437,23 @@ export class ProductService {
 
   //CRUD GROUP
 
-  async createGroup(createGroupDto: CreateGroupDto): Promise<Group> {
+  async createGroup(createGroupDto: CreateGroupDto, group_image: Express.Multer.File): Promise<Group> {
+    
     try {
+
+      if(group_image){
+        await this.s3Client.send(
+          new PutObjectCommand({
+            Bucket: 'fitnest-bucket',
+            Key: group_image.originalname,
+            Body: group_image.buffer,
+          })
+        );
+    
+        const image_url = `https://fitnest-bucket.s3.amazonaws.com/${group_image.originalname}`;
+        createGroupDto.image_url = image_url;
+      }
+
       const groupName = createGroupDto.name;
       const group = await this.groupRepository.findOne({where:{name:groupName}})
       if(group){
@@ -382,7 +463,8 @@ export class ProductService {
       return await this.groupRepository.save(newGroup);
     } catch (error) {
       throw new BadRequestException(error.message);
-    } 
+    }
+
   }
 
   async getAllGroups(page: string, limit: string): Promise<[Group[],number]> {
@@ -423,7 +505,21 @@ export class ProductService {
     }
   }
 
-  async updateGroup(groupId: string, updateGroupDto: UpdateGroupDto): Promise<Group> {
+  async updateGroup(groupId: string, updateGroupDto: UpdateGroupDto, group_image: Express.Multer.File): Promise<Group> {
+
+    if(group_image){
+      await this.s3Client.send(
+        new PutObjectCommand({
+          Bucket: 'fitnest-bucket',
+          Key: group_image.originalname,
+          Body: group_image.buffer,
+        })
+      );
+  
+      const image_url = `https://fitnest-bucket.s3.amazonaws.com/${group_image.originalname}`;
+      updateGroupDto.image_url = image_url;
+    }
+
     try {
       const group = await this.getGroupById(groupId);
 
@@ -436,6 +532,7 @@ export class ProductService {
     } catch (error) {
       throw new NotFoundException(error.message);
     }
+
   }
 
   async deleteGroup(groupId: string): Promise<DeleteResult> {
@@ -478,7 +575,9 @@ export class ProductService {
 
   async createReview(createReviewDto: CreateReviewDto): Promise<Review> {
     try {
+
       const product = await this.getProductById(createReviewDto.productId);
+
       const newStock = this.reviewRepository.create({
         ...createReviewDto,
         product,

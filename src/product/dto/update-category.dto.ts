@@ -18,5 +18,5 @@ export class UpdateCategoryDto extends PartialType(CreateCategoryDto) {
 
     @IsOptional()
     @IsString()
-    url: string;
+    image_url: string;
 }
