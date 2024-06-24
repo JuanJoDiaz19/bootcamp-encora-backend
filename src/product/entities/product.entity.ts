@@ -26,6 +26,9 @@ export class Product {
     @Column({ type: 'decimal', precision: 10, scale: 2 })
     price: number;
 
+    @Column()
+    rating: number;
+
     @Column('text', { array: true })
     image_urls:string[];
 

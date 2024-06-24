@@ -15,5 +15,6 @@ import { PaymentMethodController } from './controllers/payment_method.controller
   imports: [TypeOrmModule.forFeature([Order,OrderItem, Status, PaymentMethod]), ProductModule],
   controllers: [OrdersController, OrderItemController, StatusController, PaymentMethodController],
   providers: [OrdersService],
+  exports: [OrdersService],
 })
 export class OrdersModule {}
