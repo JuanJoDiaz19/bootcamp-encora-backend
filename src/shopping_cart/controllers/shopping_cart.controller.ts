@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
 import { ShoppingCartService } from '../services/shopping_cart.service';
 import { CreateShoppingCartDto } from '../dto/create-shopping_cart.dto';
 import { UpdateShoppingCartDto } from '../dto/update-shopping_cart.dto';
@@ -9,11 +9,6 @@ import { DeleteResult } from 'typeorm';
 export class ShoppingCartController {
   constructor(private readonly shoppingCartService: ShoppingCartService) {}
 
-  @Post()
-  create(): Promise<ShoppingCart> {
-    return this.shoppingCartService.createShoppingCart();
-  }
-
   @Get()
   findAll(): Promise<ShoppingCart[]> {
     return this.shoppingCartService.findAll();
@@ -23,6 +18,10 @@ export class ShoppingCartController {
   findOne(@Param('id') id: string): Promise<ShoppingCart> {
     return this.shoppingCartService.findOne(id);
   }
+  @Post(':id')
+  buy(@Param('id') id: string):Promise<String>{
+    return this.shoppingCartService.buy(id);
+  } 
 
   @Get('user/:userId')
   findOneByUser(@Param('userId') userId: string) {

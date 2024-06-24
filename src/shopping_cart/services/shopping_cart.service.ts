@@ -144,12 +144,12 @@ export class ShoppingCartService {
     }
   }
   
-  async buy(shoppingCartId: string){
+  async buy(shoppingCartId: string): Promise<String>{
     const shoppingCart = await this.shoppingCartRepository.findOne({
       where: { id: shoppingCartId },
       relations: ['items', 'items.product'],
     });
     const order = await this.orderService.createOrderWithShoppingCartItems(shoppingCart.items);
-    const response = this.paymentService.generatePaymentLink(shoppingCart.sub_total,order.id,shoppingCart.user.email)
+    return this.paymentService.generatePaymentLink(shoppingCart.sub_total,order.id,shoppingCart.user.email)
   }
 }
