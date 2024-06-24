@@ -203,6 +203,8 @@ export class ProductService {
     }
   }
 
+  // FILTERS
+
   async getProductsByCategory(
     categoryId: string,
     page: string,
@@ -341,6 +343,83 @@ export class ProductService {
       );
 
       return [paginatedProducts, total];
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
+  }
+
+  async getProductsSortedByPrice(order: 'ASC' | 'DESC', page: string, limit: string): Promise<[Product[], number]> {
+    try {
+
+      const pageNumber = parseInt(page, 10);
+      const limitNumber = parseInt(limit, 10);
+
+      if (
+        isNaN(pageNumber) ||
+        isNaN(limitNumber) ||
+        pageNumber <= 0 ||
+        limitNumber <= 0
+      ) {
+        throw new Error('La pagina y el limite deben ser numeros positivos');
+      }
+
+      return await this.productRepository.findAndCount({
+        order:{price:order},
+        skip: (pageNumber - 1) * limitNumber,
+        take: limitNumber,
+      })
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
+  }
+
+  /*getProductsSortedByRating(order: string, page: string, limit: string): Promise<[Product[], number]> {
+    try {
+
+      const pageNumber = parseInt(page, 10);
+      const limitNumber = parseInt(limit, 10);
+
+      if (
+        isNaN(pageNumber) ||
+        isNaN(limitNumber) ||
+        pageNumber <= 0 ||
+        limitNumber <= 0
+      ) {
+        throw new Error('La pagina y el limite deben ser numeros positivos');
+      }
+
+      return await this.productRepository.findAndCount({
+        order:{rating:order},
+        skip: (pageNumber - 1) * limitNumber,
+        take: limitNumber,
+      })
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
+  }*/
+
+  async getProductsSortedBySoldUnits(order: 'ASC' | 'DESC', page: string, limit: string): Promise<[Product[], number]> {
+    try {
+
+      const pageNumber = parseInt(page, 10);
+      const limitNumber = parseInt(limit, 10);
+
+      if (
+        isNaN(pageNumber) ||
+        isNaN(limitNumber) ||
+        pageNumber <= 0 ||
+        limitNumber <= 0
+      ) {
+        throw new Error('La pagina y el limite deben ser numeros positivos');
+      }
+
+      return await this.productRepository.createQueryBuilder("product")
+      .leftJoinAndSelect("product.stock", "stock")
+      .orderBy("stock.unities_sold", order)
+      .skip((pageNumber - 1) * limitNumber)
+      .take(limitNumber)
+      .getManyAndCount();
+
     } catch (error) {
       throw new BadRequestException(error.message);
     }
@@ -584,12 +663,17 @@ export class ProductService {
 
   async createReview(createReviewDto: CreateReviewDto): Promise<Review> {
     try {
-      const product = await this.getProductById(createReviewDto.productId);
-      const newStock = this.reviewRepository.create({
+      const product: Product = await this.getProductById(createReviewDto.productId);
+      const newReview = this.reviewRepository.create({
         ...createReviewDto,
         product,
       });
-      return await this.reviewRepository.save(newStock);
+
+      product.rating = this.calculateRating(product.reviews);
+
+      await this.productRepository.save(product);
+
+      return await this.reviewRepository.save(newReview);
     } catch (error) {
       throw new BadRequestException(error.message);
     }
@@ -710,5 +794,10 @@ export class ProductService {
     } catch (error) {
       throw new NotFoundException(error.message);
     }
+  }
+
+  calculateRating(review: Review[]): number {
+    const total = review.reduce((acc, review) => acc + review.score, 0);
+    return total / review.length;
   }
 }

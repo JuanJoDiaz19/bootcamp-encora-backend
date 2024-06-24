@@ -75,4 +75,19 @@ export class ProductController {
     return this.productService.getProductsByGroup(groupName, page, limit);
   }
 
+  @Get('filter/price/:order')
+  getProductsSortedByPrice(@Param('order') order: 'ASC' | 'DESC', @Query('page') page: string, @Query('limit') limit: string):Promise<[Product[],number]>{
+    return this.productService.getProductsSortedByPrice(order,page,limit);
+  }
+
+  /*@Get('filter/rating/:order')
+  getProductsSortedByRating(@Param('order') order: 'ASC' | 'DESC', @Query('page') page: string, @Query('limit') limit: string):Promise<[Product[],number]>{
+    return this.productService.getProductsSortedByRating(order,page,limit);
+  }*/
+
+  @Get('filter/sold_units/:order')
+  getProductsSortedBySoldUnits(@Param('order') order: 'ASC' | 'DESC', @Query('page') page: string, @Query('limit') limit: string):Promise<[Product[],number]>{
+    return this.productService.getProductsSortedBySoldUnits(order,page,limit);
+  }
+
 }
