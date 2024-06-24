@@ -8,6 +8,7 @@ import { ClientGuard } from '../guards/client.guard';
 import { UserService } from '../services/user.service';
 import { AdminGuard } from '../guards/admin.guard';
 import { UpdateUserDto } from '../dto/update-user.dto';
+import { AuthUser } from '../entities/authUser.entity';
 
 @Controller('user/')
 export class AuthUserController {
@@ -39,9 +40,8 @@ export class AuthUserController {
   @Get('status')
   @UseGuards(JwtAuthGuard)
   status(@Req() req: Request) {
-    //console.log('Inside AuthController status method');
-    //console.log(req.user);
-    return req.user;
+    const user = req.user as AuthUser;
+    return this.authService.findUserById(user.id);
   }
 
   @Get('')
