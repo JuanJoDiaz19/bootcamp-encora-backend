@@ -83,14 +83,49 @@ export class ProductController {
     return this.productService.getProductsSortedByPrice(order,page,limit);
   }
 
-  /*@Get('filter/rating/:order')
+  @Get('filter/rating/:order')
   getProductsSortedByRating(@Param('order') order: 'ASC' | 'DESC', @Query('page') page: string, @Query('limit') limit: string):Promise<[Product[],number]>{
     return this.productService.getProductsSortedByRating(order,page,limit);
-  }*/
+  }
 
   @Get('filter/sold_units/:order')
   getProductsSortedBySoldUnits(@Param('order') order: 'ASC' | 'DESC', @Query('page') page: string, @Query('limit') limit: string):Promise<[Product[],number]>{
     return this.productService.getProductsSortedBySoldUnits(order,page,limit);
   }
+
+  // FILTER PRODUCTS OF A CATEGORY BY PRICE RATING AND SOLD UNITS
+
+  @Get('filter/price/:order/:categoryId')
+  getProductsSortedByPriceForCategory(@Param('categoryId') categoryId: string, @Param('order') order: 'ASC' | 'DESC', @Query('page') page: string, @Query('limit') limit: string):Promise<[Product[],number]>{
+    return this.productService.getProductsSortedByPriceForCategory(categoryId,order,page,limit);
+  }
+
+  @Get('filter/rating/:order/:categoryId')
+  getProductsSortedByRatingForCategory(@Param('categoryId') categoryId: string ,@Param('order') order: 'ASC' | 'DESC', @Query('page') page: string, @Query('limit') limit: string):Promise<[Product[],number]>{
+    return this.productService.getProductsSortedByRatingForCategory(categoryId, order,page,limit);
+  }
+
+  @Get('filter/sold_units/:order/:categoryId')
+  getProductsSortedBySoldUnitsForCategory(@Param('categoryId') categoryId: string, @Param('order') order: 'ASC' | 'DESC', @Query('page') page: string, @Query('limit') limit: string):Promise<[Product[],number]>{
+    return this.productService.getProductsSortedBySoldUnitsForCategory(categoryId,order,page,limit);
+  }
+
+  // FILTER PRODUCTS OF A GROUP BY PRICE RATING AND SOLD UNITS
+
+  @Get('filter/price/:order/:groupId')
+  getProductsSortedByPriceForGroup(@Param('groupId') groupId: string, @Param('order') order: 'ASC' | 'DESC', @Query('page') page: string, @Query('limit') limit: string):Promise<[Product[],number]>{
+    return this.productService.getProductsSortedByPriceForGroup(groupId,order,page,limit);
+  }
+
+  @Get('filter/rating/:order/:groupId')
+  getProductsSortedByRatingForGroup(@Param('groupId') groupId: string ,@Param('order') order: 'ASC' | 'DESC', @Query('page') page: string, @Query('limit') limit: string):Promise<[Product[],number]>{
+    return this.productService.getProductsSortedByRatingForGroup(groupId, order,page,limit);
+  }
+
+  @Get('filter/sold_units/:order/:groupId')
+  getProductsSortedBySoldUnitsForGroup(@Param('groupId') groupId: string, @Param('order') order: 'ASC' | 'DESC', @Query('page') page: string, @Query('limit') limit: string):Promise<[Product[],number]>{
+    return this.productService.getProductsSortedBySoldUnitsForGroup(groupId,order,page,limit);
+  }
+
 
 }
