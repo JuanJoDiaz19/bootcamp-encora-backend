@@ -26,7 +26,9 @@ export class Product {
     @Column({ type: 'decimal', precision: 10, scale: 2 })
     price: number;
 
-    @Column()
+    @Column({
+        default: 0.0
+    })
     rating: number;
 
     @Column('text', { array: true })
