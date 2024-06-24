@@ -227,8 +227,9 @@ export class UserService {
 
   async findUserById(id_user: string) {
     try {
-      const user = await this.userRepository.findOneBy({
-        id: id_user,
+      const user = await this.userRepository.findOne({
+        where: { id: id_user },
+        relations: ['role', 'addresses', 'orders', 'reviews', 'shoppingCart'],
       });
 
       if (!user) {
