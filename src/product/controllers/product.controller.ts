@@ -1,10 +1,11 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseInterceptors, UploadedFiles } from '@nestjs/common';
 import { ProductService } from '../services/product.service';
 import { CreateProductDto } from '../dto/create-product.dto';
 import { UpdateProductDto } from '../dto/update-product.dto';
 import { Product } from '../entities/product.entity';
 import { DeleteResult } from 'typeorm';
 import { InfoProductDto } from '../dto/info-product.dto';
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 
 @Controller('product')
 export class ProductController {
@@ -12,8 +13,9 @@ export class ProductController {
 
   // CRUD PRODUCTS
   @Post()
-  create(@Body() createProductDto: CreateProductDto): Promise<Product> {
-    return this.productService.createProduct(createProductDto);
+  @UseInterceptors(FilesInterceptor('product_images'))
+  create(@Body() createProductDto: CreateProductDto, @UploadedFiles() product_images: Array<Express.Multer.File>): Promise<Product> {
+    return this.productService.createProduct(createProductDto, product_images);
   }
 
   //Retorna todos los productos que se encuentran activos
@@ -50,8 +52,9 @@ export class ProductController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto) {
-    return this.productService.updateProduct(id, updateProductDto);
+  @UseInterceptors(FilesInterceptor('product_images'))
+  update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto, @UploadedFiles() product_images: Array<Express.Multer.File>) {
+    return this.productService.updateProduct(id, updateProductDto, product_images);
   }
 
   @Delete(':id')

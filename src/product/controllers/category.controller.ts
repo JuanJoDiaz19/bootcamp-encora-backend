@@ -1,9 +1,10 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { ProductService } from '../services/product.service';
 import { CreateCategoryDto } from '../dto/create-category.dto';
 import { UpdateCategoryDto } from '../dto/update-category.dto';
 import { Category } from '../entities/category.entity';
 import { DeleteResult } from 'typeorm';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 
 @Controller('category')
@@ -12,8 +13,9 @@ export class CategoryController {
 
   //CRUD CATEGORY
   @Post('')
-  createCategory(@Body() createCategoryDto: CreateCategoryDto): Promise<Category>{
-    return this.productService.createCategory(createCategoryDto);
+  @UseInterceptors(FileInterceptor('category_image'))
+  createCategory(@Body() createCategoryDto: CreateCategoryDto, @UploadedFile() category_image: Express.Multer.File ): Promise<Category>{
+    return this.productService.createCategory(createCategoryDto, category_image);
   }
 
   @Get('')
@@ -27,8 +29,9 @@ export class CategoryController {
   }
 
   @Patch(':id')
-  updateCategory(@Param('id') categoryId: string, updateCategoryDto: UpdateCategoryDto): Promise<Category>{
-    return this.productService.updateCategory(categoryId,updateCategoryDto);
+  @UseInterceptors(FileInterceptor('category_image'))
+  updateCategory(@Param('id') categoryId: string, @Body() updateCategoryDto: UpdateCategoryDto, @UploadedFile() category_image: Express.Multer.File ): Promise<Category>{
+    return this.productService.updateCategory(categoryId,updateCategoryDto, category_image);
   }
 
   @Delete(':id')
