@@ -33,4 +33,14 @@ export class OrdersController {
   remove(@Param('id') id: string): Promise<DeleteResult> {
     return this.ordersService.deleteOrder(id);
   }
+
+  @Get('payu-response')
+  async handleResponse(@Query() referenceCode:string, @Query() message:string) {
+    return await this.ordersService.handleResponse(referenceCode,message);
+  }
+
+  @Get('payu-confirmation')
+  async handleConfirmation(@Query() referenceCode:string, @Query() message:string) {
+    return await this.ordersService.handleResponse(referenceCode,message);
+  }
 }

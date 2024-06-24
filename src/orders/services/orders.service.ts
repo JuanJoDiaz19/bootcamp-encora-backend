@@ -384,4 +384,23 @@ export class OrdersService {
     }
   }
 
+  async handleResponse(referenceCode:string, message:string){
+    try {
+      if (message === 'APPROVED') {
+        const order = await this.getPaymentMethodById(referenceCode);
+        
+        
+        if (!order) {
+          throw new Error('Order not found');
+        }
+        //cambiarle el status de la orden a aprovada
+        //aqui mandar el correo al usuario de que su orden ha sido enviada
+        
+      }
+      
+    } catch (error) {
+      throw new NotFoundException("Error en el pago");
+    }
+  }
+
 }
