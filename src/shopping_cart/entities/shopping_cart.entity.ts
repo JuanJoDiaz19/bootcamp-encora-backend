@@ -21,6 +21,5 @@ export class ShoppingCart {
     status: ShoppingCartStatus;
 
     @OneToOne(() => User, (user) => user.shoppingCart)
-    @JoinColumn({ name: 'user_id' })
     user: User;
 }

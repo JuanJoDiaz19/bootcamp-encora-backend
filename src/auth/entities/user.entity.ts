@@ -53,7 +53,6 @@ export class User {
     orders: Order[];
 
     @OneToOne(() => ShoppingCart, (shoppingCart) => shoppingCart.user, { cascade: true })
-    @JoinColumn()
     shoppingCart: ShoppingCart;
 
 }
