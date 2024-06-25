@@ -19,9 +19,9 @@ export class ShoppingCartController {
   findOne(@Param('id') id: string): Promise<ShoppingCart> {
     return this.shoppingCartService.findOne(id);
   }
-  @Post(':id')
-  buy(@Param('id') id: string):Promise<String>{
-    return this.shoppingCartService.buy(id);
+  @Post(':shoppinId/:addressId')
+  buy(@Param('shoppinId') shoppinId: string,@Param('addressId') addressId: string):Promise<String>{
+    return this.shoppingCartService.buy(shoppinId,addressId);
   } 
 
   @Get('user/:userId')

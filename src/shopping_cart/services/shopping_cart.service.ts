@@ -9,6 +9,7 @@ import { ProductService } from 'src/product/services/product.service';
 import { PaymentService } from './payment.service';
 import { OrdersService } from 'src/orders/services/orders.service';
 import { ShoppingCartResponseDto } from '../dto/response-shopping_cart.dto';
+import { AddressService } from 'src/common/services/address.service';
 
 @Injectable()
 export class ShoppingCartService {
@@ -18,6 +19,7 @@ export class ShoppingCartService {
   @InjectRepository(ShoppingCartItem)
   private readonly shoppingCartItemRepository: Repository<ShoppingCartItem>,
   private readonly productService: ProductService,
+  private readonly addressService: AddressService,
   private readonly paymentService: PaymentService,
   private readonly orderService: OrdersService,
   ){}
@@ -187,7 +189,7 @@ export class ShoppingCartService {
     }
   }
   
-  async buy(shoppingCartId: string): Promise<string> {
+  async buy(shoppingCartId: string, addressId: string): Promise<string> {
     const shoppingCart = await this.shoppingCartRepository.findOne({
         where: { id: shoppingCartId },
         relations: ['items', 'items.product', 'user'],
@@ -200,10 +202,17 @@ export class ShoppingCartService {
     if (shoppingCart.items.length === 0) {
         throw new BadRequestException(`Shopping cart with ID: ${shoppingCartId} is empty`);
     }
-    
-    const order = await this.orderService.createOrderWithShoppingCartItems(shoppingCart.user,shoppingCart.items);
 
-    return this.paymentService.generatePaymentLink(shoppingCart.sub_total, order.id, shoppingCart.user.email);
+
+    const address = this.addressService.findOne(addressId)
+
+    if (!address) {
+      throw new NotFoundException(`Addres with id ${addressId} not found `);
+  }
+    
+    const order = await this.orderService.createOrderWithShoppingCartItems(shoppingCart.user,await address,shoppingCart.items);
+
+    return this.paymentService.generatePaymentLink(shoppingCart.sub_total, order.id, shoppingCart.user.email,(await address).address,(await address).city.name);
 }
 
 }

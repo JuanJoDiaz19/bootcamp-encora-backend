@@ -16,6 +16,7 @@ import { UpdatePaymentMethodDto } from '../dto/update-payment_method.dto';
 import { CreatePaymentMethodDto } from '../dto/create-payment_method.dto';
 import { ShoppingCartItem } from 'src/shopping_cart/entities/shopping_cart_item.entity';
 import { User } from 'src/auth/entities/user.entity';
+import { Address } from 'src/common/entities/Address.entity';
 
 @Injectable()
 export class OrdersService {
@@ -126,7 +127,7 @@ export class OrdersService {
     }
   }
 
-  async createOrderWithShoppingCartItems(user:User, cartItems: ShoppingCartItem[]): Promise<Order> {
+  async createOrderWithShoppingCartItems(user:User, address:Address,cartItems: ShoppingCartItem[]): Promise<Order> {
     try {
         const order = this.orderRepository.create({
             total_price: 0
@@ -137,7 +138,7 @@ export class OrdersService {
             const orderItem = this.orderItemsRepository.create({
                 quantity: cartItem.quantity,
                 product: cartItem.product,
-                order: savedOrder,  // Asignar la orden creada
+                order: savedOrder,  
             });
             return this.orderItemsRepository.save(orderItem);
         }));
@@ -149,6 +150,7 @@ export class OrdersService {
         savedOrder.total_price = totalPrice;
         savedOrder.status= waiting;
         savedOrder.user=user;
+        savedOrder.address=address;
 
         await this.orderRepository.save(savedOrder);
 
@@ -404,13 +406,22 @@ export class OrdersService {
   async handleResponse(referenceCode:string, message:string){
     try {
       if (message === 'APPROVED') {
-        const order = await this.getPaymentMethodById(referenceCode);
+        const order = await this.getOrderById(referenceCode);
         
         
         if (!order) {
           throw new Error('Order not found');
         }
-        //cambiarle el status de la orden a aprovada
+
+        const name = "APPROVED"
+        const approved = await this.statusRepository.findOne({ where: { name } });
+
+        const today = new Date();
+
+        order.status = approved
+        order.shipment_date=today
+        order.received_date=today
+        
         //aqui mandar el correo al usuario de que su orden ha sido enviada
         
       }

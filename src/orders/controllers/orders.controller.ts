@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, Res } from '@nestjs/common';
 import { OrdersService } from '../services/orders.service';
 import { CreateOrderDto } from '../dto/create-order.dto';
 import { UpdateOrderDto } from '../dto/update-order.dto';
@@ -35,12 +35,14 @@ export class OrdersController {
   }
 
   @Get('payu-response')
-  async handleResponse(@Query() referenceCode:string, @Query() message:string) {
+  async handleResponse(@Query() referenceCode:string, @Query() message:string, @Res() res: Response,) {
+    console.log("hola",res)
     return await this.ordersService.handleResponse(referenceCode,message);
   }
 
   @Get('payu-confirmation')
-  async handleConfirmation(@Query() referenceCode:string, @Query() message:string) {
+  async handleConfirmation(@Query() referenceCode:string, @Query() message:string,@Res() res: Response,) {
+    console.log("hola",res)
     return await this.ordersService.handleResponse(referenceCode,message);
   }
 }
