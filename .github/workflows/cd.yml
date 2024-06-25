@@ -1,0 +1,65 @@
+name: CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.15.0'
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Set up .env
+      run: |
+        echo "DB_HOST=${{ secrets.DB_HOST }}" >> .env
+        echo "DB_PORT=${{ secrets.DB_PORT }}" >> .env
+        echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env
+        echo "DB_USER=${{ secrets.DB_USER }}" >> .env
+        echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
+        echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
+        echo "MAIL_HOST=${{ secrets.MAIL_HOST }}" >> .env
+        echo "MAIL_USER=${{ secrets.MAIL_USER }}" >> .env
+        echo "MAIL_PASS=${{ secrets.MAIL_PASS }}" >> .env
+        echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" >> .env
+        echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> .env
+        echo "AWS_S3_REGION=${{ secrets.AWS_S3_REGION }}" >> .env
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4 # More information on this action can be found below in the 'AWS Credentials' section
+      with:
+        role-to-assume: arn:aws:iam::123456789012:role/my-github-actions-role
+        aws-region: aws-region-1
+
+    - name: Log in to Amazon ECR
+      id: ecr-login
+      uses: aws-actions/amazon-ecr-login@v1
+
+    - name: Build, tag, and push Docker image
+      env:
+        REGISTRY: ${{ steps.ecr-login.outputs.registry }}
+        REPOSITORY: ${{ secrets.AWS_ECR_REPO }}
+        IMAGE_TAG: ${{ github.sha }}
+      run: |
+        docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG .
+        docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
+
+    - name: Deploy to ECS
+      env:
+        AWS_REGION: ${{ secrets.AWS_ECS_REGION }}
+        ECS_SERVICE: ${{ secrets.AWS_ECS_SERVICE }}
+        ECS_CLUSTER: ${{ secrets.AWS_ECS_CLUSTER }}
+        IMAGE_URI: ${{ steps.ecr-login.outputs.registry }}/${{ secrets.AWS_ECR_REPO }}:${{ github.sha }}
+      run: |
+        aws ecs update-service --cluster $ECS_CLUSTER --service $ECS_SERVICE --force-new-deployment --region $AWS_REGION
