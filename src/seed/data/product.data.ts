@@ -34,6 +34,17 @@ const products = [
         image_urls: [ "https://fitnest-bucket.s3.amazonaws.com/rack-mancuernas1.jpg", "https://fitnest-bucket.s3.amazonaws.com/rack-mancuernas2.jpg", "https://fitnest-bucket.s3.amazonaws.com/rack-mancuernas3.jpg"],
         categoryName: "Mancuernas",
         status: 'Activo'
+    },
+    {
+        name: "Mancuernas ajustables",
+        type: "Set ajustable de 25/55 lbs",
+        creationDate: "2024-06-24",
+        description: "Set de mancuernas ajustables de 25/55 libras, diseñado para hombres y mujeres. Estas mancuernas permiten ajustar rápidamente el peso girando el mango, y cuentan con un diseño antideslizante para mayor seguridad. El set incluye una bandeja negra para facilitar su almacenamiento y organización. Perfectas para una variedad de entrenamientos de fuerza y acondicionamiento físico.",
+        price: 400000,
+        rating: 0.0,
+        image_urls: [ "https://fitnest-bucket.s3.amazonaws.com/mancuerna-ajustable-plastico1.jpg", "https://fitnest-bucket.s3.amazonaws.com/mancuerna-ajustable-plastico2.jpg", "https://fitnest-bucket.s3.amazonaws.com/mancuerna-ajustable-plastico3.jpg",],
+        categoryName: "Mancuernas",
+        status: 'Activo'
     }
 ]
 
