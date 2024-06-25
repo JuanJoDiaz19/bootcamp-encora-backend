@@ -35,7 +35,7 @@ export class Address {
     })
     user: User;
 
-    @OneToMany(() => Order, (order) => order.address)
+    @OneToMany(() => Order, (order) => order.address, {nullable: true})
     orders: Order[];
     
 }
