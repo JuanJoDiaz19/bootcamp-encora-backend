@@ -6,13 +6,13 @@ import { Order } from './entities/order.entity';
 import { OrderItem } from './entities/order_item.entity';
 import { OrderItemController } from './controllers/order_item.controller';
 import { ProductModule } from 'src/product/product.module';
-import { Status } from './entities/status.entity';
+import { OrderStatus } from './entities/order-status.entity';
 import { PaymentMethod } from './entities/payment_method.entity';
-import { StatusController } from './controllers/status.controller';
+import { StatusController } from './controllers/order-status.controller';
 import { PaymentMethodController } from './controllers/payment_method.controller';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Order,OrderItem, Status, PaymentMethod]), ProductModule],
+  imports: [TypeOrmModule.forFeature([Order,OrderItem, OrderStatus, PaymentMethod]), ProductModule],
   controllers: [OrdersController, OrderItemController, StatusController, PaymentMethodController],
   providers: [OrdersService],
   exports: [OrdersService],

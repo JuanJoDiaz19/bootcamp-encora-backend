@@ -21,6 +21,5 @@ export class ShoppingCartItem {
     sub_total: number;
 
     @ManyToOne(() => ShoppingCart, (cart) => cart.items)
-    @JoinColumn({ name: 'shopping_cart_id' })
     shoppingCart: ShoppingCart;
 }

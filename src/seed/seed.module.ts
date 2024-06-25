@@ -16,11 +16,27 @@ import { Stock } from 'src/product/entities/stock.entity';
 import { ShoppingCart } from 'src/shopping_cart/entities/shopping_cart.entity';
 import { ShoppingCartItem } from 'src/shopping_cart/entities/shopping_cart_item.entity';
 import { ShoppingCartStatus } from 'src/shopping_cart/entities/shopping_cart_status.entity';
+import { OrderStatus } from 'src/orders/entities/order-status.entity';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([
-      User, Role, Address, City, Department, Order, OrderItem, Category, Group, Product, Review, Stock, ShoppingCart, ShoppingCartItem, ShoppingCartStatus
+      User, 
+      Role, 
+      Address, 
+      City, 
+      Department, 
+      Order, 
+      OrderItem, 
+      Category, 
+      Group, 
+      Product, 
+      Review, 
+      Stock, 
+      ShoppingCart, 
+      ShoppingCartItem, 
+      ShoppingCartStatus,
+      OrderStatus,
     ]),
   ],
   providers: [SeederService],
