@@ -1,8 +1,8 @@
 import { Column, Entity, ManyToMany, ManyToOne, OneToMany, PrimaryColumn, PrimaryGeneratedColumn } from "typeorm";
 import { Department } from "./Department.entity";
 import { City } from "./City.entity";
-import { User } from "src/auth/entities/user.entity";
-import { Order } from "src/orders/entities/order.entity";
+import { User } from "../../auth/entities/user.entity";
+import { Order } from "../../orders/entities/order.entity";
 
 @Entity()
 export class Address { 

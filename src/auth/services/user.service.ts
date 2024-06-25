@@ -17,7 +17,7 @@ import { CreateUserDto } from '../dto/create-user.dto';
 import { Role } from '../entities/role.entity';
 import { MailerService } from '@nestjs-modules/mailer';
 import { UpdateUserDto } from '../dto/update-user.dto';
-import { ShoppingCartService } from 'src/shopping_cart/services/shopping_cart.service';
+import { ShoppingCartService } from '../../shopping_cart/services/shopping_cart.service';
 
 @Injectable()
 export class UserService {
@@ -238,7 +238,11 @@ export class UserService {
 
       return user;
     } catch (error) {
-      this.handleDBErrors(error);
+      if (error instanceof NotFoundException) {
+        throw error;
+      } else {
+        this.handleDBErrors(error);
+      }
     }
   }
 
@@ -289,7 +293,11 @@ export class UserService {
         },
       };
     } catch (error) {
-      throw new UnauthorizedException('Invalid token');
+      if (error instanceof NotFoundException) {
+        throw error;
+      } else {
+        throw new UnauthorizedException('Invalid token');
+      }
     }
   }
 }

@@ -7,14 +7,14 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DeleteResult, Repository } from 'typeorm';
 import { CreateOrderItemDto } from '../dto/create-order_item.dto';
 import { UpdateOrderItemDto } from '../dto/update-order_item.dto';
-import { ProductService } from 'src/product/services/product.service';
+import { ProductService } from '../../product/services/product.service';
 import { CreateStatusDto } from '../dto/create-status.dto';
 import { Status } from '../entities/status.entity';
 import { PaymentMethod } from '../entities/payment_method.entity';
 import { UpdateStatusDto } from '../dto/update-status.dto';
 import { UpdatePaymentMethodDto } from '../dto/update-payment_method.dto';
 import { CreatePaymentMethodDto } from '../dto/create-payment_method.dto';
-import { ShoppingCartItem } from 'src/shopping_cart/entities/shopping_cart_item.entity';
+import { ShoppingCartItem } from '../../shopping_cart/entities/shopping_cart_item.entity';
 
 @Injectable()
 export class OrdersService {

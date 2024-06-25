@@ -1,8 +1,8 @@
 import { Column, CreateDateColumn, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { OrderItem } from "./order_item.entity";
 import { Status } from "./status.entity";
-import { User } from "src/auth/entities/user.entity";
-import { Address } from "src/common/entities/Address.entity";
+import { User } from "../../auth/entities/user.entity";
+import { Address } from "../../common/entities/Address.entity";
 import { PaymentMethod } from "./payment_method.entity";
 
 @Entity()

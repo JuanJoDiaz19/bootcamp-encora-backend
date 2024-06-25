@@ -1,9 +1,9 @@
 import { Column, Entity, JoinColumn, ManyToOne, OneToMany, OneToOne, PrimaryGeneratedColumn } from "typeorm";
 import { Role } from "./role.entity";
-import { Address } from "src/common/entities/Address.entity";
-import { ShoppingCart } from "src/shopping_cart/entities/shopping_cart.entity";
-import { Order } from "src/orders/entities/order.entity";
-import { Review } from "src/product/entities/review.entity";
+import { Address } from "../../common/entities/Address.entity";
+import { ShoppingCart } from "../../shopping_cart/entities/shopping_cart.entity";
+import { Order } from "../../orders/entities/order.entity";
+import { Review } from "../../product/entities/review.entity";
 
 
 @Entity()

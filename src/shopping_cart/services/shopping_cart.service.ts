@@ -5,9 +5,9 @@ import { ShoppingCart } from '../entities/shopping_cart.entity';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ShoppingCartItem } from '../entities/shopping_cart_item.entity';
-import { ProductService } from 'src/product/services/product.service';
+import { ProductService } from '../../product/services/product.service';
 import { PaymentService } from './payment.service';
-import { OrdersService } from 'src/orders/services/orders.service';
+import { OrdersService } from '../../orders/services/orders.service';
 
 @Injectable()
 export class ShoppingCartService {

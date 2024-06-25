@@ -1,7 +1,7 @@
 import { Column, Entity, OneToMany, ManyToOne, JoinColumn, PrimaryGeneratedColumn, OneToOne } from "typeorm";
 import { ShoppingCartItem } from "./shopping_cart_item.entity";
 import { ShoppingCartStatus } from "./shopping_cart_status.entity";
-import { User } from "src/auth/entities/user.entity";
+import { User } from "../../auth/entities/user.entity";
 
 @Entity()
 export class ShoppingCart {

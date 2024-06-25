@@ -1,6 +1,6 @@
 import { Column, CreateDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 import { Product } from "./product.entity";
-import { User } from "src/auth/entities/user.entity";
+import { User } from "../../auth/entities/user.entity";
 
 @Entity()
 export class Review {
