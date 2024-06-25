@@ -45,7 +45,21 @@ const products = [
         image_urls: [ "https://fitnest-bucket.s3.amazonaws.com/mancuerna-ajustable-plastico1.jpg", "https://fitnest-bucket.s3.amazonaws.com/mancuerna-ajustable-plastico2.jpg", "https://fitnest-bucket.s3.amazonaws.com/mancuerna-ajustable-plastico3.jpg",],
         categoryName: "Mancuernas",
         status: 'Activo'
+    },
+
+    //Barras y discos,
+    {
+        name: "Barra olimpica",
+        type: "44lb 28mmm",
+        creationDate: "2024-06-24",
+        description: `Barra de peso CAP de acero laminado en frío con acabado cromado, compatible con discos olímpicos (agujero de 2"). Mide 2185 mm de largo, con eje de 51.75", manguito de 15.3", empuñadura de 28 mm, 54,000 PSI de resistencia a la tracción y pesa 16 kg.`,
+        price: 400000,
+        rating: 0.0,
+        image_urls: [ "https://fitnest-bucket.s3.amazonaws.com/barbell1.jpg", "https://fitnest-bucket.s3.amazonaws.com/barbell2.jpg", "https://fitnest-bucket.s3.amazonaws.com/barbell3.jpg"],
+        categoryName: "Mancuernas",
+        status: 'Activo'
     }
+
 ]
 
 export default products;

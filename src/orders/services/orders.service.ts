@@ -9,7 +9,7 @@ import { CreateOrderItemDto } from '../dto/create-order_item.dto';
 import { UpdateOrderItemDto } from '../dto/update-order_item.dto';
 import { ProductService } from 'src/product/services/product.service';
 import { CreateStatusDto } from '../dto/create-status.dto';
-import { Status } from '../entities/status.entity';
+import { OrderStatus } from '../entities/order-status.entity';
 import { PaymentMethod } from '../entities/payment_method.entity';
 import { UpdateStatusDto } from '../dto/update-status.dto';
 import { UpdatePaymentMethodDto } from '../dto/update-payment_method.dto';
@@ -24,8 +24,8 @@ export class OrdersService {
     private readonly orderRepository : Repository<Order>,
     @InjectRepository(OrderItem)
     private readonly orderItemsRepository: Repository<OrderItem>,
-    @InjectRepository(Status)
-    private readonly statusRepository: Repository<Status>,
+    @InjectRepository(OrderStatus)
+    private readonly statusRepository: Repository<OrderStatus>,
     @InjectRepository(PaymentMethod)
     private readonly paymentMethodRepository: Repository<PaymentMethod>,
     private readonly productService : ProductService,
@@ -242,7 +242,7 @@ export class OrdersService {
 
   //CRUD STATUS
 
-  async createStatus(createStatusDto: CreateStatusDto): Promise<Status> {
+  async createStatus(createStatusDto: CreateStatusDto): Promise<OrderStatus> {
     try {
       const name = createStatusDto.name;
       const status = this.statusRepository.findOne({where:{name}})
@@ -259,7 +259,7 @@ export class OrdersService {
     }
   }
   
-  async getAllStatus(page: string, limit: string): Promise<[Status[], number]> {
+  async getAllStatus(page: string, limit: string): Promise<[OrderStatus[], number]> {
     try {
       const pageNumber = parseInt(page, 10);
       const limitNumber = parseInt(limit, 10);
@@ -279,7 +279,7 @@ export class OrdersService {
     }
   }
 
-  async getStatusById(id: string): Promise<Status> {
+  async getStatusById(id: string): Promise<OrderStatus> {
     try {
       const status = await this.statusRepository.findOne({where:{id}});
 
@@ -293,7 +293,7 @@ export class OrdersService {
     }
   }
 
-  async updateStatus(id: string, updateStatusDto : UpdateStatusDto): Promise<Status> {
+  async updateStatus(id: string, updateStatusDto : UpdateStatusDto): Promise<OrderStatus> {
     try {
       const status = this.getStatusById(id);
       const updateStatus = Object.assign(status,updateStatusDto);

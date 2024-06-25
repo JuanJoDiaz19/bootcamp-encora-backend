@@ -24,6 +24,8 @@ import roles from './data/role.data';
 import users from './data/user.data';
 import * as bcrypt from 'bcrypt';
 import products from './data/product.data';
+import shoppingCartStatus from './data/shopping-cart-status.data';
+import { OrderStatus } from 'src/orders/entities/order-status.entity';
 
 
 @Injectable()
@@ -36,6 +38,7 @@ export class SeederService implements OnApplicationBootstrap {
     @InjectRepository(Department) private readonly departmentRepository: Repository<Department>,
     @InjectRepository(Order) private readonly orderRepository: Repository<Order>,
     @InjectRepository(OrderItem) private readonly orderItemRepository: Repository<OrderItem>,
+    @InjectRepository(OrderStatus) private readonly orderStatusRepository: Repository<OrderStatus>,
     @InjectRepository(Category) private readonly categoryRepository: Repository<Category>,
     @InjectRepository(Group) private readonly groupRepository: Repository<Group>,
     @InjectRepository(Product) private readonly productRepository: Repository<Product>,
@@ -51,10 +54,16 @@ export class SeederService implements OnApplicationBootstrap {
   }
 
   async seedData() {
-    //console.log("Hello?")
+    
     try {
-
+      
+      await this.orderStatusRepository.delete({});
+      await this.orderItemRepository.delete({});
+      await this.orderRepository.delete({});
       await this.userRepository.delete({});
+      await this.shoppingCartRepository.delete({});
+      await this.shoppingCartStatusRepository.delete({});
+      await this.shoppingCartItemRepository.delete({});
       await this.roleRepository.delete({});
       await this.shoppingCartItemRepository.delete({});
       await this.productRepository.delete({});
@@ -89,11 +98,17 @@ export class SeederService implements OnApplicationBootstrap {
         await this.cityRepository.save(cityToSave);
       }));
 
+
+      await Promise.all(shoppingCartStatus.map(async (status) => {
+        await this.shoppingCartStatusRepository.save(status);
+      }));
+
       await Promise.all(roles.map(async (role) => {
         await this.roleRepository.save(role);
       }));
 
       await Promise.all(users.map(async (user) => {
+
         const {roleName, ...restUser} = user;
         const role = await this.roleRepository.findOneBy({role: roleName}); 
         const userToSave = {
@@ -102,7 +117,12 @@ export class SeederService implements OnApplicationBootstrap {
         }
         userToSave.role = role;
         userToSave.password = bcrypt.hashSync(user.password, 10)
-        await this.userRepository.save(userToSave);
+        const finalUser = await this.userRepository.save(userToSave);
+        await this.shoppingCartRepository.save({
+          sub_total: 0,
+          status: await this.shoppingCartStatusRepository.findOneBy({status: "POR PAGAR"}),
+          user: finalUser
+        })
       }));
 
       await Promise.all(products.map(async (product) => {

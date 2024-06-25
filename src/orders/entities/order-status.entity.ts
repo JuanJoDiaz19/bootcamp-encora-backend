@@ -2,7 +2,7 @@ import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { Order } from "./order.entity";
 
 @Entity()
-export class Status {
+export class OrderStatus {
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
