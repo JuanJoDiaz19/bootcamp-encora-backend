@@ -16,10 +16,10 @@ export class ShoppingCart {
     @Column({ type: 'decimal', precision: 10, scale: 2 })
     sub_total: number;
 
-    @ManyToOne(() => ShoppingCartStatus)
-    @JoinColumn({ name: 'status_id' })
+    @ManyToOne(() => ShoppingCartStatus, (shopping_cart_status) => shopping_cart_status.shopping_carts)
     status: ShoppingCartStatus;
 
     @OneToOne(() => User, (user) => user.shoppingCart)
+    @JoinColumn()
     user: User;
 }

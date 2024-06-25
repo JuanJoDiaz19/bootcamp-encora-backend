@@ -56,6 +56,7 @@ export class SeederService implements OnApplicationBootstrap {
   async seedData() {
     
     try {
+
       await this.addressRepository.delete({});
       await this.orderStatusRepository.delete({});
       await this.orderItemRepository.delete({});
@@ -70,9 +71,11 @@ export class SeederService implements OnApplicationBootstrap {
       await this.categoryRepository.delete({});
       await this.groupRepository.delete({});
 
+     
       await Promise.all(groups.map(async (group) => {
         await this.groupRepository.save(group);
       }));
+
 
       await Promise.all(categories.map(async (category) => {
         const {groupId, ...saveCategory} = category;
@@ -81,13 +84,15 @@ export class SeederService implements OnApplicationBootstrap {
           ...saveCategory, 
           group
         }
+        
         await this.categoryRepository.save(categoryToSave);
       }));
+
 
       await Promise.all(departments.map(async (department) => {
         await this.departmentRepository.save(department);
       }));
-
+    
       await Promise.all(cities.map(async (city) => {
         const {deparmentName, ...saveCity} = city;
         const department = await this.departmentRepository.findOneBy({name: deparmentName});
@@ -103,6 +108,7 @@ export class SeederService implements OnApplicationBootstrap {
         await this.shoppingCartStatusRepository.save(status);
       }));
 
+
       await Promise.all(roles.map(async (role) => {
         await this.roleRepository.save(role);
       }));
@@ -110,6 +116,7 @@ export class SeederService implements OnApplicationBootstrap {
       await Promise.all(users.map(async (user) => {
 
         const {roleName, ...restUser} = user;
+        console.log("A")
         const role = await this.roleRepository.findOneBy({role: roleName}); 
         const userToSave = {
           ...restUser,
@@ -118,11 +125,13 @@ export class SeederService implements OnApplicationBootstrap {
         userToSave.role = role;
         userToSave.password = bcrypt.hashSync(user.password, 10)
         const finalUser = await this.userRepository.save(userToSave);
-        await this.shoppingCartRepository.save({
-          sub_total: 0,
-          status: await this.shoppingCartStatusRepository.findOneBy({status: "POR PAGAR"}),
-          user: finalUser
-        })
+        const status = await this.shoppingCartStatusRepository.findOneBy({status: "POR PAGAR"}) ;
+        const newShoppingCart = new ShoppingCart();
+        newShoppingCart.sub_total = 0.0;
+        newShoppingCart.status = status;
+        newShoppingCart.user = finalUser;
+
+        await this.shoppingCartRepository.save(newShoppingCart);
       }));
 
       await Promise.all(products.map(async (product) => {
@@ -135,8 +144,7 @@ export class SeederService implements OnApplicationBootstrap {
         await this.productRepository.save(productToSave);
       }));
 
-
-
+      console.log("I")
 
 
     } catch(error) {
