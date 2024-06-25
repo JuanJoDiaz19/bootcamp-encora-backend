@@ -8,10 +8,12 @@ export class ShoppingCart {
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
-    @OneToMany(() => ShoppingCartItem, (shopping_cart_item) => shopping_cart_item.shopping_cart)
+    @OneToMany(() => ShoppingCartItem, (item) => item.shoppingCart, {
+      cascade: true,
+    })
     items: ShoppingCartItem[];
 
-    @Column({ type: 'decimal', precision: 10, scale: 2})
+    @Column({ type: 'decimal', precision: 10, scale: 2 })
     sub_total: number;
 
     @ManyToOne(() => ShoppingCartStatus)
@@ -19,5 +21,6 @@ export class ShoppingCart {
     status: ShoppingCartStatus;
 
     @OneToOne(() => User, (user) => user.shoppingCart)
+    @JoinColumn({ name: 'user_id' })
     user: User;
 }

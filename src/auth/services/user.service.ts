@@ -1,4 +1,12 @@
-import { BadRequestException, HttpException, HttpStatus, Injectable, InternalServerErrorException, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  HttpException,
+  HttpStatus,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
@@ -23,34 +31,36 @@ export class UserService {
     private readonly shoppinCartService: ShoppingCartService,
   ) {}
 
-
   async createUser(createUserDto: CreateUserDto) {
     try {
-      const { password, ...userData } = createUserDto;
+        const { password, ...userData } = createUserDto;
 
-      const clientRole = await this.roleRepository.findOne({
-        where: { role: createUserDto.role },
-      });
+        const clientRole = await this.roleRepository.findOne({
+            where: { role: createUserDto.role },
+        });
 
-      const newCart = await this.shoppinCartService.createShoppingCart();
+        const user = this.userRepository.create({
+            ...userData,
+            password: bcrypt.hashSync(password, 10),
+            role: clientRole,
+        });
 
-      const user = this.userRepository.create({
-        ...userData,
-        password: bcrypt.hashSync(password, 10),
-        role: clientRole,
-        shoppingCart:newCart,
-      });
+        const savedUser = await this.userRepository.save(user);
 
-      await this.userRepository.save(user);
+        const newCart = await this.shoppinCartService.createShoppingCart(savedUser.id);
 
-      return {
-        ...user,
-        token: this.jwtService.sign({ id: user.id }),
-      };
+        savedUser.shoppingCart = newCart;
+        await this.userRepository.save(savedUser);
+
+        return {
+            ...savedUser,
+            token: this.jwtService.sign({ id: savedUser.id }),
+        };
     } catch (error) {
-      this.handleDBErrors(error);
+        this.handleDBErrors(error);
     }
-  }
+}
+
 
   async login(loginUserDto: LoginUserDto) {
     const { email, password } = loginUserDto;
@@ -83,22 +93,23 @@ export class UserService {
     };
   }
 
-  async recoverPassword(id_user: string){
-    try { 
-      const user = await this.findUserById(id_user);
+  async recoverPassword(email: string) {
+    try {
+      const user = await this.userRepository.findOne({
+        where: { email },
+      });
 
       const new_random_password = this.generateRandomString(10);
 
-      user.password = bcrypt.hashSync( new_random_password, 10 );
+      user.password = bcrypt.hashSync(new_random_password, 10);
 
       this.userRepository.save(user);
 
       this.mailerService.sendMail({
-        to: user.email, 
+        to: user.email,
         from: 'fitnestcorp@gmail.com',
-        subject: 'Recuperación de tu contraseña de FitNest', 
-        text: 
-        `
+        subject: 'Recuperación de tu contraseña de FitNest',
+        text: `
           Estimado/a ${user.first_name},
 
   Hemos recibido una solicitud para restablecer la contraseña de tu cuenta en FitNest. Entendemos lo importante que es la seguridad de tu cuenta y queremos asegurarnos de que puedas acceder a ella lo antes posible.
@@ -117,10 +128,8 @@ export class UserService {
   fitnestcorp@gmail.com
   3181234567
   fitnestcorp.com
-        `
-        , 
-        html: 
-        `
+        `,
+        html: `
         <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -182,39 +191,44 @@ export class UserService {
 </body>
 </html>
 
-        ` 
+        `,
       });
-      return { success: true, message: 'Password recovery email sent successfully.' };
-    } catch(error ){
+      return {
+        success: true,
+        message: 'Password recovery email sent successfully.',
+      };
+    } catch (error) {
       throw new HttpException(
-        { success: false, message: 'Failed to recover password.', error: error.message },
+        {
+          success: false,
+          message: 'Failed to recover password.',
+          error: error.message,
+        },
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
-
   }
 
   async updateUser(updateUserDto: UpdateUserDto, id_user: string) {
-
-    const {role, ...userToUpdate} = updateUserDto; 
+    const { role, ...userToUpdate } = updateUserDto;
 
     const user = await this.userRepository.preload({
-        id: id_user, 
-        ...userToUpdate
+      id: id_user,
+      ...userToUpdate,
     });
 
-    if ( !user ) throw new NotFoundException(`Professional with id: ${ id_user } not found`);
+    if (!user)
+      throw new NotFoundException(`Professional with id: ${id_user} not found`);
 
-        try {
-            await this.userRepository.save( user );
-            return user;
-        } catch (error) {
-            this.handleDBErrors(error);
-        }
+    try {
+      await this.userRepository.save(user);
+      return user;
+    } catch (error) {
+      this.handleDBErrors(error);
+    }
   }
 
-  async findUserById( id_user: string) {
-
+  async findUserById(id_user: string) {
     try {
       const user = await this.userRepository.findOne({
         where: { id: id_user },
@@ -231,25 +245,23 @@ export class UserService {
     }
   }
 
-
   private generateRandomString(length: number) {
-    const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    let randomString = "*";
+    const charset =
+      'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let randomString = '*';
     for (let i = 0; i < length; i++) {
-        const randomIndex = Math.floor(Math.random() * charset.length);
-        randomString += charset[randomIndex];
+      const randomIndex = Math.floor(Math.random() * charset.length);
+      randomString += charset[randomIndex];
     }
     return randomString;
   }
 
-  private handleDBErrors( error: any ): never {
-   
+  private handleDBErrors(error: any): never {
     if (error.code === '23505') throw new BadRequestException(error.detail);
 
     console.log(error);
 
     throw new InternalServerErrorException('Please check server logs');
-
   }
 
   async retriveAllUsers() {
@@ -259,7 +271,6 @@ export class UserService {
   async verifyToken(token: string) {
     try {
       const decoded = this.jwtService.verify(token);
-
 
       const user = await this.userRepository.findOne({
         where: { id: decoded.id },
@@ -284,6 +295,4 @@ export class UserService {
       throw new UnauthorizedException('Invalid token');
     }
   }
-
-
 }
