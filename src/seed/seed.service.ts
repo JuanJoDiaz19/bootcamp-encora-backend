@@ -61,10 +61,10 @@ export class SeederService implements OnApplicationBootstrap {
       await this.orderStatusRepository.delete({});
       await this.orderItemRepository.delete({});
       await this.orderRepository.delete({});
-      await this.userRepository.delete({});
       await this.shoppingCartRepository.delete({});
       await this.shoppingCartStatusRepository.delete({});
       await this.shoppingCartItemRepository.delete({});
+      await this.userRepository.delete({});
       await this.roleRepository.delete({});
       await this.shoppingCartItemRepository.delete({});
       await this.productRepository.delete({});
@@ -116,7 +116,6 @@ export class SeederService implements OnApplicationBootstrap {
       await Promise.all(users.map(async (user) => {
 
         const {roleName, ...restUser} = user;
-        console.log("A")
         const role = await this.roleRepository.findOneBy({role: roleName}); 
         const userToSave = {
           ...restUser,
