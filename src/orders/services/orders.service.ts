@@ -17,6 +17,7 @@ import { CreatePaymentMethodDto } from '../dto/create-payment_method.dto';
 import { ShoppingCartItem } from 'src/shopping_cart/entities/shopping_cart_item.entity';
 import { User } from 'src/auth/entities/user.entity';
 import { Address } from 'src/common/entities/Address.entity';
+import { CreateResponseDto } from '../entities/create-response.dto';
 
 @Injectable()
 export class OrdersService {
@@ -312,6 +313,21 @@ export class OrdersService {
     }
   }
 
+  async getStatusByName(name: string): Promise<OrderStatus> {
+    try {
+      const status = await this.statusRepository.findOne({ where: { name } });
+
+      if(!status){
+        throw new Error(`El estado con nombre ${name} no existe`);
+      }
+
+      return status;
+    } catch (error) {
+      throw new NotFoundException(error.message);
+    }
+  }
+
+
   async updateStatus(id: string, updateStatusDto : UpdateStatusDto): Promise<OrderStatus> {
     try {
       const status = this.getStatusById(id);
@@ -403,25 +419,28 @@ export class OrdersService {
     }
   }
 
-  async handleResponse(referenceCode:string, message:string){
+  async handleResponse(data:CreateResponseDto){
     try {
-      if (message === 'APPROVED') {
-        const order = await this.getOrderById(referenceCode);
+      if (data.message === 'APPROVED') {
+        const order = await this.getOrderById(data.referenceCode);
         
         
         if (!order) {
           throw new Error('Order not found');
         }
 
-        const name = "APPROVED"
-        const approved = await this.statusRepository.findOne({ where: { name } });
+        console.log(order)
 
+        const name = "APPROVED"
+        const approved =  await this.getStatusByName(name);
+        console.log(approved,"AA")
         const today = new Date();
 
         order.status = approved
         order.shipment_date=today
         order.received_date=today
         
+        console.log(order)
         //aqui mandar el correo al usuario de que su orden ha sido enviada
         
       }

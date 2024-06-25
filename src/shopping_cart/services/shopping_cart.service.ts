@@ -204,15 +204,15 @@ export class ShoppingCartService {
     }
 
 
-    const address = this.addressService.findOne(addressId)
+    const address = await this.addressService.findOne(addressId)
 
     if (!address) {
       throw new NotFoundException(`Addres with id ${addressId} not found `);
   }
-    
-    const order = await this.orderService.createOrderWithShoppingCartItems(shoppingCart.user,await address,shoppingCart.items);
-
-    return this.paymentService.generatePaymentLink(shoppingCart.sub_total, order.id, shoppingCart.user.email,(await address).address,(await address).city.name);
+    console.log(shoppingCart)
+    const order = await this.orderService.createOrderWithShoppingCartItems(shoppingCart.user, address,shoppingCart.items);
+    console.log("popo", order)
+    return this.paymentService.generatePaymentLink(shoppingCart.sub_total, order.id, shoppingCart.user.email,address.address, address.city.name);
 }
 
 }

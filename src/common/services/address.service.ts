@@ -49,7 +49,7 @@ export class AddressService {
     }
 
     findOne(id: string) : Promise<Address>{
-        return this.addressRepository.findOneBy({id: id });
+        return this.addressRepository.findOne({ where:{id: id },relations: ['city']});
     }
 
     async update(id: string, updateAddressDto: UpdateAddressDto) {

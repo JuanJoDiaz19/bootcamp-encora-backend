@@ -19,9 +19,9 @@ export class StatusController{
         return this.ordersService.getAllStatus(page,limit);
     }
 
-    @Get(':id')
-    getStatusById(@Param('id') id:string):Promise<OrderStatus>{
-        return this.ordersService.getStatusById(id);
+    @Get(':name')
+    getStatusById(@Param('name') name:string):Promise<OrderStatus>{
+        return this.ordersService.getStatusByName(name);
     }
 
     @Patch(':id')

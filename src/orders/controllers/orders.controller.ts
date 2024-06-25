@@ -4,6 +4,7 @@ import { CreateOrderDto } from '../dto/create-order.dto';
 import { UpdateOrderDto } from '../dto/update-order.dto';
 import { Order } from '../entities/order.entity';
 import { DeleteResult } from 'typeorm';
+import { CreateResponseDto } from '../entities/create-response.dto';
 
 @Controller('orders')
 export class OrdersController {
@@ -19,7 +20,7 @@ export class OrdersController {
     return this.ordersService.getAllOrders(page,limit);
   }
 
-  @Get(':id')
+  @Get('/one/:id')
   findOne(@Param('id') id: string): Promise<Order> {
     return this.ordersService.getOrderById(id);
   }
@@ -34,15 +35,14 @@ export class OrdersController {
     return this.ordersService.deleteOrder(id);
   }
 
-  @Get('payu-response')
-  async handleResponse(@Query() referenceCode:string, @Query() message:string, @Res() res: Response,) {
-    console.log("hola",res)
-    return await this.ordersService.handleResponse(referenceCode,message);
+  @Get('/payu-response')
+  async handleResponse(@Query() data:CreateResponseDto) {
+    return await this.ordersService.handleResponse(data);
   }
 
-  @Get('payu-confirmation')
-  async handleConfirmation(@Query() referenceCode:string, @Query() message:string,@Res() res: Response,) {
-    console.log("hola",res)
-    return await this.ordersService.handleResponse(referenceCode,message);
+  @Get('/payu-confirmation')
+  async handleConfirmation(@Query() data:CreateResponseDto) {
+    console.log("CONFIRMATION")
+    return await this.ordersService.handleResponse(data);
   }
 }
