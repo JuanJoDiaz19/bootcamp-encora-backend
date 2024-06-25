@@ -12,7 +12,7 @@ export class Group {
     @Column({nullable: true})
     description: string;
 
-    @OneToMany(() => Category,(category) => category.group)
+    @OneToMany(() => Category,(category) => category.group, { cascade: true })
     categories: Category[]
 
     @Column()

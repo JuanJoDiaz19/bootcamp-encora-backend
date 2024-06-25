@@ -15,27 +15,35 @@ import { Stock } from 'src/product/entities/stock.entity';
 import { ShoppingCart } from 'src/shopping_cart/entities/shopping_cart.entity';
 import { ShoppingCartItem } from 'src/shopping_cart/entities/shopping_cart_item.entity';
 import { ShoppingCartStatus } from 'src/shopping_cart/entities/shopping_cart_status.entity';
-import { Repository } from 'typeorm';
+import { Repository, getConnection } from 'typeorm';
+import groups from './data/group.data';
+import categories from './data/category.data';
+import departments from './data/department.data';
+import cities from './data/city.data';
+import roles from './data/role.data';
+import users from './data/user.data';
+import * as bcrypt from 'bcrypt';
+import products from './data/product.data';
 
 
 @Injectable()
 export class SeederService implements OnApplicationBootstrap {
   constructor(
     @InjectRepository(User) private readonly userRepository: Repository<User>,
-@InjectRepository(Role) private readonly roleRepository: Repository<Role>,
-@InjectRepository(Address) private readonly addressRepository: Repository<Address>,
-@InjectRepository(City) private readonly cityRepository: Repository<City>,
-@InjectRepository(Department) private readonly departmentRepository: Repository<Department>,
-@InjectRepository(Order) private readonly orderRepository: Repository<Order>,
-@InjectRepository(OrderItem) private readonly orderItemRepository: Repository<OrderItem>,
-@InjectRepository(Category) private readonly categoryRepository: Repository<Category>,
-@InjectRepository(Group) private readonly groupRepository: Repository<Group>,
-@InjectRepository(Product) private readonly productRepository: Repository<Product>,
-@InjectRepository(Review) private readonly reviewRepository: Repository<Review>,
-@InjectRepository(Stock) private readonly stockRepository: Repository<Stock>,
-@InjectRepository(ShoppingCart) private readonly shoppingCartRepository: Repository<ShoppingCart>,
-@InjectRepository(ShoppingCartItem) private readonly shoppingCartItemRepository: Repository<ShoppingCartItem>,
-@InjectRepository(ShoppingCartStatus) private readonly shoppingCartStatusRepository: Repository<ShoppingCartStatus>,
+    @InjectRepository(Role) private readonly roleRepository: Repository<Role>,
+    @InjectRepository(Address) private readonly addressRepository: Repository<Address>,
+    @InjectRepository(City) private readonly cityRepository: Repository<City>,
+    @InjectRepository(Department) private readonly departmentRepository: Repository<Department>,
+    @InjectRepository(Order) private readonly orderRepository: Repository<Order>,
+    @InjectRepository(OrderItem) private readonly orderItemRepository: Repository<OrderItem>,
+    @InjectRepository(Category) private readonly categoryRepository: Repository<Category>,
+    @InjectRepository(Group) private readonly groupRepository: Repository<Group>,
+    @InjectRepository(Product) private readonly productRepository: Repository<Product>,
+    @InjectRepository(Review) private readonly reviewRepository: Repository<Review>,
+    @InjectRepository(Stock) private readonly stockRepository: Repository<Stock>,
+    @InjectRepository(ShoppingCart) private readonly shoppingCartRepository: Repository<ShoppingCart>,
+    @InjectRepository(ShoppingCartItem) private readonly shoppingCartItemRepository: Repository<ShoppingCartItem>,
+    @InjectRepository(ShoppingCartStatus) private readonly shoppingCartStatusRepository: Repository<ShoppingCartStatus>,
   ) { }
 
   async onApplicationBootstrap(): Promise<void> {
@@ -43,6 +51,76 @@ export class SeederService implements OnApplicationBootstrap {
   }
 
   async seedData() {
-    
+    //console.log("Hello?")
+    try {
+
+      await this.userRepository.delete({});
+      await this.roleRepository.delete({});
+      await this.shoppingCartItemRepository.delete({});
+      await this.productRepository.delete({});
+      await this.categoryRepository.delete({});
+      await this.groupRepository.delete({});
+
+      await Promise.all(groups.map(async (group) => {
+        await this.groupRepository.save(group);
+      }));
+
+      await Promise.all(categories.map(async (category) => {
+        const {groupId, ...saveCategory} = category;
+        const group = await this.groupRepository.findOneBy({id: category.groupId});
+        const categoryToSave = {
+          ...saveCategory, 
+          group
+        }
+        await this.categoryRepository.save(categoryToSave);
+      }));
+
+      await Promise.all(departments.map(async (department) => {
+        await this.departmentRepository.save(department);
+      }));
+
+      await Promise.all(cities.map(async (city) => {
+        const {deparmentName, ...saveCity} = city;
+        const department = await this.departmentRepository.findOneBy({name: deparmentName});
+        const cityToSave = {
+          ...saveCity, 
+          department
+        }
+        await this.cityRepository.save(cityToSave);
+      }));
+
+      await Promise.all(roles.map(async (role) => {
+        await this.roleRepository.save(role);
+      }));
+
+      await Promise.all(users.map(async (user) => {
+        const {roleName, ...restUser} = user;
+        const role = await this.roleRepository.findOneBy({role: roleName}); 
+        const userToSave = {
+          ...restUser,
+          role
+        }
+        userToSave.role = role;
+        userToSave.password = bcrypt.hashSync(user.password, 10)
+        await this.userRepository.save(userToSave);
+      }));
+
+      await Promise.all(products.map(async (product) => {
+        const {categoryName, ...restProduct} = product;
+        const category = await this.categoryRepository.findOneBy({name: categoryName}); 
+        const productToSave = {
+          ...restProduct,
+          category
+        }
+        await this.productRepository.save(productToSave);
+      }));
+
+
+
+
+
+    } catch(error) {
+      console.log('Error inserting seed data:', error);
+    }
   }
 }

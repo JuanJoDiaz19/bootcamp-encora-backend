@@ -9,6 +9,7 @@ import { ProductModule } from './product/product.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MailerModule } from '@nestjs-modules/mailer';
+import { SeederModule } from './seed/seed.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { MailerModule } from '@nestjs-modules/mailer';
     CommonModule,
     OrdersModule, 
     ShoppingCartModule, 
+    SeederModule,
     ProductModule],
   controllers: [AppController],
   providers: [AppService],
