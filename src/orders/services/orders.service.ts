@@ -9,12 +9,15 @@ import { CreateOrderItemDto } from '../dto/create-order_item.dto';
 import { UpdateOrderItemDto } from '../dto/update-order_item.dto';
 import { ProductService } from '../../product/services/product.service';
 import { CreateStatusDto } from '../dto/create-status.dto';
-import { Status } from '../entities/status.entity';
+import { OrderStatus } from '../entities/order-status.entity';
 import { PaymentMethod } from '../entities/payment_method.entity';
 import { UpdateStatusDto } from '../dto/update-status.dto';
 import { UpdatePaymentMethodDto } from '../dto/update-payment_method.dto';
 import { CreatePaymentMethodDto } from '../dto/create-payment_method.dto';
 import { ShoppingCartItem } from '../../shopping_cart/entities/shopping_cart_item.entity';
+import { User } from 'src/auth/entities/user.entity';
+import { Address } from 'src/common/entities/Address.entity';
+import { CreateResponseDto } from '../entities/create-response.dto';
 
 @Injectable()
 export class OrdersService {
@@ -24,8 +27,8 @@ export class OrdersService {
     private readonly orderRepository : Repository<Order>,
     @InjectRepository(OrderItem)
     private readonly orderItemsRepository: Repository<OrderItem>,
-    @InjectRepository(Status)
-    private readonly statusRepository: Repository<Status>,
+    @InjectRepository(OrderStatus)
+    private readonly statusRepository: Repository<OrderStatus>,
     @InjectRepository(PaymentMethod)
     private readonly paymentMethodRepository: Repository<PaymentMethod>,
     private readonly productService : ProductService,
@@ -125,25 +128,39 @@ export class OrdersService {
     }
   }
 
-  async createOrderWithShoppingCartItems(cartItems:ShoppingCartItem[]):Promise<Order>{
+  async createOrderWithShoppingCartItems(user:User, address:Address,cartItems: ShoppingCartItem[]): Promise<Order> {
     try {
-
-      const orderItems: string[] = await Promise.all(cartItems.map(async cartItem => {
-        const { id } = await this.createOrderItem({
-          quantity: cartItem.quantity,
-          productId: cartItem.product.id
+        const order = this.orderRepository.create({
+            total_price: 0
         });
-        return id;
-      }));
+        const savedOrder = await this.orderRepository.save(order);
 
-      const order : Order = await this.create({itemsIds:orderItems});
+        const orderItems = await Promise.all(cartItems.map(async cartItem => {
+            const orderItem = this.orderItemsRepository.create({
+                quantity: cartItem.quantity,
+                product: cartItem.product,
+                order: savedOrder,  
+            });
+            return this.orderItemsRepository.save(orderItem);
+        }));
 
-      return order;
-      
+        const totalPrice = orderItems.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+        const name = "WAITING"
+        const waiting = await this.statusRepository.findOne({ where: { name } });
+        savedOrder.items = orderItems;
+        savedOrder.total_price = totalPrice;
+        savedOrder.status= waiting;
+        savedOrder.user=user;
+        savedOrder.address=address;
+
+        await this.orderRepository.save(savedOrder);
+
+        console.log()
+        return savedOrder;
     } catch (error) {
-      throw new BadRequestException(error.message);
+        throw new BadRequestException(error.message);
     }
-  }
+}
 
   //CRUD ORDER ITEMS
   
@@ -242,24 +259,27 @@ export class OrdersService {
 
   //CRUD STATUS
 
-  async createStatus(createStatusDto: CreateStatusDto): Promise<Status> {
+  async createStatus(createStatusDto: CreateStatusDto): Promise<OrderStatus> {
     try {
-      const name = createStatusDto.name;
-      const status = this.statusRepository.findOne({where:{name}})
-      if(status){
-        throw new Error(`El estado con nombre ${name} ya existe`);
-      }
+        const name = createStatusDto.name;
 
-      const newStatus = this.statusRepository.create(createStatusDto);
+        const existingStatus = await this.statusRepository.findOne({ where: { name } });
 
-      return await this.statusRepository.save(newStatus);
+        if (existingStatus) {
+            throw new Error(`El estado con nombre ${name} ya existe`);
+        }
+
+        const newStatus = this.statusRepository.create(createStatusDto);
+
+        return await this.statusRepository.save(newStatus);
 
     } catch (error) {
-      throw new BadRequestException(error.message);
+        throw new BadRequestException(error.message);
     }
-  }
+}
+
   
-  async getAllStatus(page: string, limit: string): Promise<[Status[], number]> {
+  async getAllStatus(page: string, limit: string): Promise<[OrderStatus[], number]> {
     try {
       const pageNumber = parseInt(page, 10);
       const limitNumber = parseInt(limit, 10);
@@ -279,7 +299,7 @@ export class OrdersService {
     }
   }
 
-  async getStatusById(id: string): Promise<Status> {
+  async getStatusById(id: string): Promise<OrderStatus> {
     try {
       const status = await this.statusRepository.findOne({where:{id}});
 
@@ -293,7 +313,22 @@ export class OrdersService {
     }
   }
 
-  async updateStatus(id: string, updateStatusDto : UpdateStatusDto): Promise<Status> {
+  async getStatusByName(name: string): Promise<OrderStatus> {
+    try {
+      const status = await this.statusRepository.findOne({ where: { name } });
+
+      if(!status){
+        throw new Error(`El estado con nombre ${name} no existe`);
+      }
+
+      return status;
+    } catch (error) {
+      throw new NotFoundException(error.message);
+    }
+  }
+
+
+  async updateStatus(id: string, updateStatusDto : UpdateStatusDto): Promise<OrderStatus> {
     try {
       const status = this.getStatusById(id);
       const updateStatus = Object.assign(status,updateStatusDto);
@@ -384,16 +419,28 @@ export class OrdersService {
     }
   }
 
-  async handleResponse(referenceCode:string, message:string){
+  async handleResponse(data:CreateResponseDto){
     try {
-      if (message === 'APPROVED') {
-        const order = await this.getPaymentMethodById(referenceCode);
+      if (data.message === 'APPROVED') {
+        const order = await this.getOrderById(data.referenceCode);
         
         
         if (!order) {
           throw new Error('Order not found');
         }
-        //cambiarle el status de la orden a aprovada
+
+        console.log(order)
+
+        const name = "APPROVED"
+        const approved =  await this.getStatusByName(name);
+        console.log(approved,"AA")
+        const today = new Date();
+
+        order.status = approved
+        order.shipment_date=today
+        order.received_date=today
+        
+        console.log(order)
         //aqui mandar el correo al usuario de que su orden ha sido enviada
         
       }

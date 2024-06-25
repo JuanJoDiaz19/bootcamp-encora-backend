@@ -33,31 +33,34 @@ export class UserService {
 
   async createUser(createUserDto: CreateUserDto) {
     try {
-      const { password, ...userData } = createUserDto;
+        const { password, ...userData } = createUserDto;
 
-      const clientRole = await this.roleRepository.findOne({
-        where: { role: createUserDto.role },
-      });
+        const clientRole = await this.roleRepository.findOne({
+            where: { role: createUserDto.role },
+        });
 
-      const newCart = await this.shoppinCartService.createShoppingCart();
+        const user = this.userRepository.create({
+            ...userData,
+            password: bcrypt.hashSync(password, 10),
+            role: clientRole,
+        });
 
-      const user = this.userRepository.create({
-        ...userData,
-        password: bcrypt.hashSync(password, 10),
-        role: clientRole,
-        shoppingCart: newCart,
-      });
+        const savedUser = await this.userRepository.save(user);
 
-      await this.userRepository.save(user);
+        const newCart = await this.shoppinCartService.createShoppingCart(savedUser.id);
 
-      return {
-        ...user,
-        token: this.jwtService.sign({ id: user.id }),
-      };
+        savedUser.shoppingCart = newCart;
+        await this.userRepository.save(savedUser);
+
+        return {
+            ...savedUser,
+            token: this.jwtService.sign({ id: savedUser.id }),
+        };
     } catch (error) {
-      this.handleDBErrors(error);
+        this.handleDBErrors(error);
     }
-  }
+}
+
 
   async login(loginUserDto: LoginUserDto) {
     const { email, password } = loginUserDto;

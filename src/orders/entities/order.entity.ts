@@ -1,6 +1,6 @@
 import { Column, CreateDateColumn, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { OrderItem } from "./order_item.entity";
-import { Status } from "./status.entity";
+import { OrderStatus } from "./order-status.entity";
 import { User } from "../../auth/entities/user.entity";
 import { Address } from "../../common/entities/Address.entity";
 import { PaymentMethod } from "./payment_method.entity";
@@ -13,8 +13,8 @@ export class Order {
     @Column({ type: 'decimal', precision: 10, scale: 2})
     total_price: number;
 
-    @ManyToOne(()=> Status, (status)=>status.orders)
-    status : Status;
+    @ManyToOne(()=> OrderStatus, (status)=>status.orders)
+    status : OrderStatus;
 
     @CreateDateColumn()
     creation_date: Date;

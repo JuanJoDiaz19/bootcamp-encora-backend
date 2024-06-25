@@ -4,6 +4,7 @@ import { CreateShoppingCartDto } from '../dto/create-shopping_cart.dto';
 import { UpdateShoppingCartDto } from '../dto/update-shopping_cart.dto';
 import { ShoppingCart } from '../entities/shopping_cart.entity';
 import { DeleteResult } from 'typeorm';
+import { ShoppingCartResponseDto } from '../dto/response-shopping_cart.dto';
 
 @Controller('shoppingcart')
 export class ShoppingCartController {
@@ -18,9 +19,9 @@ export class ShoppingCartController {
   findOne(@Param('id') id: string): Promise<ShoppingCart> {
     return this.shoppingCartService.findOne(id);
   }
-  @Post(':id')
-  buy(@Param('id') id: string):Promise<String>{
-    return this.shoppingCartService.buy(id);
+  @Post(':shoppinId/:addressId')
+  buy(@Param('shoppinId') shoppinId: string,@Param('addressId') addressId: string):Promise<String>{
+    return this.shoppingCartService.buy(shoppinId,addressId);
   } 
 
   @Get('user/:userId')
@@ -29,7 +30,7 @@ export class ShoppingCartController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateShoppingCartDto: UpdateShoppingCartDto): Promise<ShoppingCart> {
+  update(@Param('id') id: string, @Body() updateShoppingCartDto: UpdateShoppingCartDto): Promise<ShoppingCartResponseDto> {
     return this.shoppingCartService.update(id, updateShoppingCartDto);
   }
 

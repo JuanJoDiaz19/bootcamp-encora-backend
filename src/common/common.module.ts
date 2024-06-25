@@ -14,5 +14,6 @@ import { User } from 'src/auth/entities/user.entity';
   ],
   controllers: [AddressController],
   providers: [AddressService],
+  exports: [AddressService]
 })
 export class CommonModule {}

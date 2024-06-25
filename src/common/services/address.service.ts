@@ -30,6 +30,10 @@ export class AddressService {
         const user = await this.userRepository.findOneBy(
             {id: user_id}
         )
+
+        if(!user){
+            throw new BadRequestException(`User ${user_id} doesnt exist`);
+        }
         
         const address_saved = {
             ...address, 
@@ -44,8 +48,8 @@ export class AddressService {
         return this.addressRepository.find();
     }
 
-    findOne(id: string) {
-        return this.addressRepository.findOneBy({id: id });
+    findOne(id: string) : Promise<Address>{
+        return this.addressRepository.findOne({ where:{id: id },relations: ['city']});
     }
 
     async update(id: string, updateAddressDto: UpdateAddressDto) {

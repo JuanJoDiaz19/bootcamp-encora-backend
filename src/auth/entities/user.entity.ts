@@ -52,8 +52,7 @@ export class User {
     @OneToMany(() => Order, (order) => order.user)
     orders: Order[];
 
-    @OneToOne(() => ShoppingCart, (shoppingCart) => shoppingCart.user)
-    @JoinColumn()
+    @OneToOne(() => ShoppingCart, (shoppingCart) => shoppingCart.user, { cascade: true })
     shoppingCart: ShoppingCart;
 
 }

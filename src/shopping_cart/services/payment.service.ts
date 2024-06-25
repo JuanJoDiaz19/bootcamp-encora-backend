@@ -19,6 +19,8 @@ export class PaymentService {
   private responseUrl: string;
   private confirmationUrl: string;
   private buyerEmail: string;
+  private address: string;
+  private city: string;
 
 
   constructor(
@@ -65,18 +67,22 @@ export class PaymentService {
               <input type="hidden" name="responseUrl" value="${this.responseUrl}" />
               <input type="hidden" name="confirmationUrl" value="${this.confirmationUrl}" />
               <input type="hidden" name="buyerEmail" value="${this.buyerEmail}" />
+              <input name="shippingAddress"    type="hidden"  value="${this.address}"   >
+              <input name="shippingCity"       type="hidden"  value="${this.city}" >
+              <input name="shippingCountry"    type="hidden"  value="CO"  >
           </form>
       </body>
       </html>
     `;
   }
   
-  generatePaymentLink(amount:number,referenceCode:string,buyerEmail:string): string {
+  generatePaymentLink(amount:number,referenceCode:string,buyerEmail:string, address:string,city:string): string {
     this.amount=amount;
     this.referenceCode=referenceCode;
     this.buyerEmail=buyerEmail;
-    this.currency=this.currency;
     this.amount=amount;
+    this.city=city
+    this.address=address
     this.signature = this.generateFormSignature(this.apiKey,this.merchantId, this.referenceCode, this.amount.toString(),this.currency);
     this.tax = this.amount * 0.19;
     this.taxReturnBase = this.amount - this.tax;
