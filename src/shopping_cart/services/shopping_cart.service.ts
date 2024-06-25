@@ -8,6 +8,7 @@ import { ShoppingCartItem } from '../entities/shopping_cart_item.entity';
 import { ProductService } from 'src/product/services/product.service';
 import { PaymentService } from './payment.service';
 import { OrdersService } from 'src/orders/services/orders.service';
+import { ShoppingCartResponseDto } from '../dto/response-shopping_cart.dto';
 
 @Injectable()
 export class ShoppingCartService {
@@ -22,12 +23,12 @@ export class ShoppingCartService {
   ){}
   
   
-  async createShoppingCart(): Promise<ShoppingCart> {
-    const shoppingCart = this.shoppingCartRepository.create();
+  async createShoppingCart(userId: string): Promise<ShoppingCart> {
+    const shoppingCart = this.shoppingCartRepository.create({ user: { id: userId } });
     shoppingCart.sub_total = 0;
-    //const shoppingCart = this.shoppingCartRepository.create({ user: { id: userId } });
     return await this.shoppingCartRepository.save(shoppingCart);
-  }
+}
+
 
   async findAll(): Promise<ShoppingCart[]> {
     return this.shoppingCartRepository.find();
@@ -62,61 +63,104 @@ export class ShoppingCartService {
   async update(
     shoppingCartId: string,
     updateShoppingCartDto: UpdateShoppingCartDto,
-  ): Promise<ShoppingCart> {
+): Promise<ShoppingCartResponseDto> {
     const { productIds, operation } = updateShoppingCartDto;
-  
+
+    // Obtener el carrito de compras
     const shoppingCart = await this.shoppingCartRepository.findOne({
-      where: { id: shoppingCartId },
-      relations: ['items', 'items.product'],
+        where: { id: shoppingCartId },
+        relations: ['items', 'items.product'],
     });
-  
+
     if (!shoppingCart) {
-      throw new NotFoundException(`Shopping cart with ID: ${shoppingCartId} not found`);
+        throw new NotFoundException(`Shopping cart with ID: ${shoppingCartId} not found`);
     }
-  
+
+    // Obtener los productos por IDs
     const products = await this.productService.getProductsByIds(productIds);
-  
-    if (products.length !== productIds.length) {
-      throw new NotFoundException('One or more products not found');
+
+    if (!products || products.length !== productIds.length) {
+        throw new NotFoundException('One or more products not found');
     }
-  
+    console.log("ca", shoppingCart.user)
     if (operation === 'add') {
-      for (const product of products) {
-        const existingItem = shoppingCart.items.find(
-          (item) => item.product.id === product.id,
-        );
-        if (existingItem) {
-          existingItem.quantity += 1;
-        } else {
-          const newItem = new ShoppingCartItem();
-          // newItem.shopping_cart = shoppingCart; // Ya no es necesario
-          newItem.product = product;
-          newItem.quantity = 1;
-          newItem.price = product.price;
-          await this.shoppingCartItemRepository.save(newItem);
-          shoppingCart.items.push(newItem);
+        for (const product of products) {
+            if (!product || !product.id) {
+                throw new Error('Invalid product data');
+            }
+
+            const existingItem = shoppingCart.items.find(
+                (item) => item.product.id === product.id,
+            );
+
+            if (existingItem) {
+                existingItem.quantity += 1;
+                existingItem.sub_total = product.price * existingItem.quantity;
+            } else {
+                const newItem = new ShoppingCartItem();
+                newItem.sub_total = product.price;
+                newItem.product = product;
+                newItem.quantity = 1;
+                newItem.price = product.price;
+                newItem.shoppingCart = shoppingCart; // Asigna el carrito de compras al nuevo item
+                shoppingCart.items.push(newItem);
+            }
         }
-      }
     } else if (operation === 'remove') {
-      const itemsToRemove = shoppingCart.items.filter((item) =>
-        productIds.includes(item.product.id),
-      );
-      shoppingCart.items = shoppingCart.items.filter(
-        (item) => !productIds.includes(item.product.id),
-      );
-      await this.shoppingCartItemRepository.remove(itemsToRemove);
+        const itemsToRemove = shoppingCart.items.filter((item) =>
+            productIds.includes(item.product.id),
+        );
+
+        if (itemsToRemove.length === 0) {
+            throw new NotFoundException('No items to remove found in the cart');
+        }
+
+        shoppingCart.items = shoppingCart.items.filter(
+            (item) => !productIds.includes(item.product.id),
+        );
+        await this.shoppingCartItemRepository.remove(itemsToRemove);
     } else {
-      throw new Error('Invalid operation');
+        throw new Error('Invalid operation');
     }
-  
+
+    // Calcular el subtotal
     shoppingCart.sub_total = shoppingCart.items.reduce(
-      (sum, item) => sum + item.price * item.quantity,
-      0,
+        (sum, item) => sum + item.price * item.quantity,
+        0,
     );
-  
-    return this.shoppingCartRepository.save(shoppingCart);
-  }
-  
+    
+
+    const result = await this.shoppingCartRepository.save(shoppingCart);
+
+
+    // Mapea el carrito de compras a DTO para la respuesta
+    const responseDto: ShoppingCartResponseDto = {
+      id: result.id,
+      items: result.items.map(item => {
+          if (!item.product) {
+              throw new Error('Product not found in item');
+          }
+          return {
+              id: item.id,
+              productId: item.product.id,
+              quantity: item.quantity,
+              price: item.price,
+              sub_total: item.sub_total
+          };
+      }),
+      sub_total: result.sub_total,
+      status: result.status,
+      userId: result.user ? result.user.id : null, // Verifica si result.user está definido
+  };
+
+
+    return responseDto;
+}
+
+
+
+
+
 
   async remove(id: string): Promise<void> {
     try {

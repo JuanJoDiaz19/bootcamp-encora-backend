@@ -52,7 +52,7 @@ export class User {
     @OneToMany(() => Order, (order) => order.user)
     orders: Order[];
 
-    @OneToOne(() => ShoppingCart, (shoppingCart) => shoppingCart.user)
+    @OneToOne(() => ShoppingCart, (shoppingCart) => shoppingCart.user, { cascade: true })
     @JoinColumn()
     shoppingCart: ShoppingCart;
 
