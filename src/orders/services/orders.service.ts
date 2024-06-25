@@ -15,6 +15,7 @@ import { UpdateStatusDto } from '../dto/update-status.dto';
 import { UpdatePaymentMethodDto } from '../dto/update-payment_method.dto';
 import { CreatePaymentMethodDto } from '../dto/create-payment_method.dto';
 import { ShoppingCartItem } from 'src/shopping_cart/entities/shopping_cart_item.entity';
+import { User } from 'src/auth/entities/user.entity';
 
 @Injectable()
 export class OrdersService {
@@ -125,25 +126,38 @@ export class OrdersService {
     }
   }
 
-  async createOrderWithShoppingCartItems(cartItems:ShoppingCartItem[]):Promise<Order>{
+  async createOrderWithShoppingCartItems(user:User, cartItems: ShoppingCartItem[]): Promise<Order> {
     try {
-
-      const orderItems: string[] = await Promise.all(cartItems.map(async cartItem => {
-        const { id } = await this.createOrderItem({
-          quantity: cartItem.quantity,
-          productId: cartItem.product.id
+        const order = this.orderRepository.create({
+            total_price: 0
         });
-        return id;
-      }));
+        const savedOrder = await this.orderRepository.save(order);
 
-      const order : Order = await this.create({itemsIds:orderItems});
+        const orderItems = await Promise.all(cartItems.map(async cartItem => {
+            const orderItem = this.orderItemsRepository.create({
+                quantity: cartItem.quantity,
+                product: cartItem.product,
+                order: savedOrder,  // Asignar la orden creada
+            });
+            return this.orderItemsRepository.save(orderItem);
+        }));
 
-      return order;
-      
+        const totalPrice = orderItems.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+        const name = "WAITING"
+        const waiting = await this.statusRepository.findOne({ where: { name } });
+        savedOrder.items = orderItems;
+        savedOrder.total_price = totalPrice;
+        savedOrder.status= waiting;
+        savedOrder.user=user;
+
+        await this.orderRepository.save(savedOrder);
+
+        console.log()
+        return savedOrder;
     } catch (error) {
-      throw new BadRequestException(error.message);
+        throw new BadRequestException(error.message);
     }
-  }
+}
 
   //CRUD ORDER ITEMS
   
@@ -244,20 +258,23 @@ export class OrdersService {
 
   async createStatus(createStatusDto: CreateStatusDto): Promise<Status> {
     try {
-      const name = createStatusDto.name;
-      const status = this.statusRepository.findOne({where:{name}})
-      if(status){
-        throw new Error(`El estado con nombre ${name} ya existe`);
-      }
+        const name = createStatusDto.name;
 
-      const newStatus = this.statusRepository.create(createStatusDto);
+        const existingStatus = await this.statusRepository.findOne({ where: { name } });
 
-      return await this.statusRepository.save(newStatus);
+        if (existingStatus) {
+            throw new Error(`El estado con nombre ${name} ya existe`);
+        }
+
+        const newStatus = this.statusRepository.create(createStatusDto);
+
+        return await this.statusRepository.save(newStatus);
 
     } catch (error) {
-      throw new BadRequestException(error.message);
+        throw new BadRequestException(error.message);
     }
-  }
+}
+
   
   async getAllStatus(page: string, limit: string): Promise<[Status[], number]> {
     try {

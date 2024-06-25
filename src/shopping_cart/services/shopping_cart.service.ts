@@ -1,4 +1,4 @@
-import { Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { CreateShoppingCartDto } from '../dto/create-shopping_cart.dto';
 import { UpdateShoppingCartDto } from '../dto/update-shopping_cart.dto';
 import { ShoppingCart } from '../entities/shopping_cart.entity';
@@ -66,23 +66,20 @@ export class ShoppingCartService {
 ): Promise<ShoppingCartResponseDto> {
     const { productIds, operation } = updateShoppingCartDto;
 
-    // Obtener el carrito de compras
     const shoppingCart = await this.shoppingCartRepository.findOne({
         where: { id: shoppingCartId },
-        relations: ['items', 'items.product'],
+        relations: ['items', 'items.product','user'],
     });
 
     if (!shoppingCart) {
         throw new NotFoundException(`Shopping cart with ID: ${shoppingCartId} not found`);
     }
 
-    // Obtener los productos por IDs
     const products = await this.productService.getProductsByIds(productIds);
 
     if (!products || products.length !== productIds.length) {
         throw new NotFoundException('One or more products not found');
     }
-    console.log("ca", shoppingCart.user)
     if (operation === 'add') {
         for (const product of products) {
             if (!product || !product.id) {
@@ -102,28 +99,34 @@ export class ShoppingCartService {
                 newItem.product = product;
                 newItem.quantity = 1;
                 newItem.price = product.price;
-                newItem.shoppingCart = shoppingCart; // Asigna el carrito de compras al nuevo item
+                newItem.shoppingCart = shoppingCart; 
                 shoppingCart.items.push(newItem);
             }
         }
     } else if (operation === 'remove') {
-        const itemsToRemove = shoppingCart.items.filter((item) =>
-            productIds.includes(item.product.id),
-        );
+      for (const productId of productIds) {
+          const existingItem = shoppingCart.items.find(
+              (item) => item.product.id === productId,
+          );
+  
+          if (!existingItem) {
+              throw new NotFoundException(`Item with product ID: ${productId} not found in the cart`);
+          }
+  
+          existingItem.quantity -= 1;
+          existingItem.sub_total = existingItem.price * existingItem.quantity;
+  
+          if (existingItem.quantity <= 0) {
+              shoppingCart.items = shoppingCart.items.filter(
+                  (item) => item.product.id !== productId,
+              );
+              await this.shoppingCartItemRepository.remove(existingItem);
+          }
+      }
+  } else {
+      throw new Error('Invalid operation');
+  }
 
-        if (itemsToRemove.length === 0) {
-            throw new NotFoundException('No items to remove found in the cart');
-        }
-
-        shoppingCart.items = shoppingCart.items.filter(
-            (item) => !productIds.includes(item.product.id),
-        );
-        await this.shoppingCartItemRepository.remove(itemsToRemove);
-    } else {
-        throw new Error('Invalid operation');
-    }
-
-    // Calcular el subtotal
     shoppingCart.sub_total = shoppingCart.items.reduce(
         (sum, item) => sum + item.price * item.quantity,
         0,
@@ -133,7 +136,6 @@ export class ShoppingCartService {
     const result = await this.shoppingCartRepository.save(shoppingCart);
 
 
-    // Mapea el carrito de compras a DTO para la respuesta
     const responseDto: ShoppingCartResponseDto = {
       id: result.id,
       items: result.items.map(item => {
@@ -150,7 +152,7 @@ export class ShoppingCartService {
       }),
       sub_total: result.sub_total,
       status: result.status,
-      userId: result.user ? result.user.id : null, // Verifica si result.user está definido
+      userId: result.user ? result.user.id : null, 
   };
 
 
@@ -185,12 +187,23 @@ export class ShoppingCartService {
     }
   }
   
-  async buy(shoppingCartId: string): Promise<String>{
+  async buy(shoppingCartId: string): Promise<string> {
     const shoppingCart = await this.shoppingCartRepository.findOne({
-      where: { id: shoppingCartId },
-      relations: ['items', 'items.product'],
+        where: { id: shoppingCartId },
+        relations: ['items', 'items.product', 'user'],
     });
-    const order = await this.orderService.createOrderWithShoppingCartItems(shoppingCart.items);
-    return this.paymentService.generatePaymentLink(shoppingCart.sub_total,order.id,shoppingCart.user.email)
-  }
+
+    if (!shoppingCart) {
+        throw new NotFoundException(`Shopping cart with ID: ${shoppingCartId} not found`);
+    }
+
+    if (shoppingCart.items.length === 0) {
+        throw new BadRequestException(`Shopping cart with ID: ${shoppingCartId} is empty`);
+    }
+    
+    const order = await this.orderService.createOrderWithShoppingCartItems(shoppingCart.user,shoppingCart.items);
+
+    return this.paymentService.generatePaymentLink(shoppingCart.sub_total, order.id, shoppingCart.user.email);
+}
+
 }
