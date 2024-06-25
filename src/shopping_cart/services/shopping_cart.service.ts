@@ -64,26 +64,22 @@ export class ShoppingCartService {
     updateShoppingCartDto: UpdateShoppingCartDto,
   ): Promise<ShoppingCart> {
     const { productIds, operation } = updateShoppingCartDto;
-
+  
     const shoppingCart = await this.shoppingCartRepository.findOne({
       where: { id: shoppingCartId },
       relations: ['items', 'items.product'],
     });
-
+  
     if (!shoppingCart) {
-      throw new NotFoundException(
-        `Shopping cart with ID: ${shoppingCartId} not found`,
-      );
+      throw new NotFoundException(`Shopping cart with ID: ${shoppingCartId} not found`);
     }
-
+  
     const products = await this.productService.getProductsByIds(productIds);
-
-    console.log(products, 'cacac');
-
+  
     if (products.length !== productIds.length) {
       throw new NotFoundException('One or more products not found');
     }
-
+  
     if (operation === 'add') {
       for (const product of products) {
         const existingItem = shoppingCart.items.find(
@@ -93,7 +89,7 @@ export class ShoppingCartService {
           existingItem.quantity += 1;
         } else {
           const newItem = new ShoppingCartItem();
-          newItem.shopping_cart = shoppingCart;
+          // newItem.shopping_cart = shoppingCart; // Ya no es necesario
           newItem.product = product;
           newItem.quantity = 1;
           newItem.price = product.price;
@@ -112,14 +108,15 @@ export class ShoppingCartService {
     } else {
       throw new Error('Invalid operation');
     }
-
+  
     shoppingCart.sub_total = shoppingCart.items.reduce(
       (sum, item) => sum + item.price * item.quantity,
       0,
     );
-
+  
     return this.shoppingCartRepository.save(shoppingCart);
   }
+  
 
   async remove(id: string): Promise<void> {
     try {
