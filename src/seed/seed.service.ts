@@ -56,7 +56,7 @@ export class SeederService implements OnApplicationBootstrap {
   async seedData() {
     
     try {
-      
+      await this.addressRepository.delete({});
       await this.orderStatusRepository.delete({});
       await this.orderItemRepository.delete({});
       await this.orderRepository.delete({});
