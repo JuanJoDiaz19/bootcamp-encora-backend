@@ -93,18 +93,20 @@ export class UserService {
     };
   }
 
-  async recoverPassword(email: string) {
+  async recoverPassword(emailObject: any) {
     try {
+
+      const email = emailObject.email;
       const user = await this.userRepository.findOne({
         where: { email },
       });
-
+      
       const new_random_password = this.generateRandomString(10);
 
       user.password = bcrypt.hashSync(new_random_password, 10);
 
-      this.userRepository.save(user);
-
+      const userSaved = await this.userRepository.save(user);
+      
       this.mailerService.sendMail({
         to: user.email,
         from: 'fitnestcorp@gmail.com',
@@ -222,6 +224,7 @@ export class UserService {
         message: 'Password recovery email sent successfully.',
       };
     } catch (error) {
+      console.log(error);
       throw new HttpException(
         {
           success: false,
