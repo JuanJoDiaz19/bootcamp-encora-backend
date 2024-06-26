@@ -401,6 +401,7 @@ export class ProductService {
       }
 
       return await this.productRepository.findAndCount({
+        relations: ['reviews', 'stock'],
         order:{price:order},
         skip: (pageNumber - 1) * limitNumber,
         take: limitNumber,
@@ -424,8 +425,9 @@ export class ProductService {
       ) {
         throw new Error('La pagina y el limite deben ser numeros positivos');
       }
-
+      
       return await this.productRepository.findAndCount({
+        relations: ['reviews', 'stock'],
         order:{rating:order},
         skip: (pageNumber - 1) * limitNumber,
         take: limitNumber,
@@ -452,6 +454,7 @@ export class ProductService {
 
       return await this.productRepository.createQueryBuilder("product")
       .leftJoinAndSelect("product.stock", "stock")
+      .leftJoinAndSelect("product.reviews", "reviews")
       .orderBy("stock.unities_sold", order)
       .skip((pageNumber - 1) * limitNumber)
       .take(limitNumber)
@@ -464,187 +467,171 @@ export class ProductService {
 
   async getProductsSortedByPriceForCategory(categoryId: string, order: 'ASC' | 'DESC', page: string, limit: string): Promise<[Product[], number]> {
     try {
-
       const pageNumber = parseInt(page, 10);
       const limitNumber = parseInt(limit, 10);
-
-      if (
-        isNaN(pageNumber) ||
-        isNaN(limitNumber) ||
-        pageNumber <= 0 ||
-        limitNumber <= 0
-      ) {
-        throw new Error('La pagina y el limite deben ser numeros positivos');
+  
+      if (isNaN(pageNumber) || isNaN(limitNumber) || pageNumber <= 0 || limitNumber <= 0) {
+        throw new Error('La página y el límite deben ser números positivos');
       }
-
+  
       const category = await this.getCategoryById(categoryId);
-
-      return await this.productRepository.findAndCount({
-        where: { category: category },
-        order:{price:order},
-        skip: (pageNumber - 1) * limitNumber,
-        take: limitNumber,
-      })
-    } catch (error) {
-      throw new BadRequestException(error.message);
-    }
-  }
-
-  async getProductsSortedByRatingForCategory(categoryId: string, order: 'ASC' | 'DESC', page: string, limit: string): Promise<[Product[], number]> {
-    try {
-
-      const pageNumber = parseInt(page, 10);
-      const limitNumber = parseInt(limit, 10);
-
-      if (
-        isNaN(pageNumber) ||
-        isNaN(limitNumber) ||
-        pageNumber <= 0 ||
-        limitNumber <= 0
-      ) {
-        throw new Error('La pagina y el limite deben ser numeros positivos');
-      }
-
-      const category = await this.getCategoryById(categoryId);
-
-      const [products, total] = await this.productRepository.findAndCount({
-        where: { category: category },
-        order: { rating: order },
-        skip: (pageNumber - 1) * limitNumber,
-        take: limitNumber,
-      });
-
-      return [products, total];
-    } catch (error) {
-      throw new BadRequestException(error.message);
-    }
-  }
-
-  async getProductsSortedBySoldUnitsForCategory(categoryId: string, order: 'ASC' | 'DESC', page: string, limit: string): Promise<[Product[], number]> {
-    try {
-
-      const pageNumber = parseInt(page, 10);
-      const limitNumber = parseInt(limit, 10);
-
-      if (
-        isNaN(pageNumber) ||
-        isNaN(limitNumber) ||
-        pageNumber <= 0 ||
-        limitNumber <= 0
-      ) {
-        throw new Error('La pagina y el limite deben ser numeros positivos');
-      }
-
-      const category = await this.getCategoryById(categoryId);
-
+  
       const [products, total] = await this.productRepository.createQueryBuilder("product")
+        .leftJoinAndSelect("product.reviews", "reviews")
         .leftJoinAndSelect("product.stock", "stock")
-        .where("product.category = :category", { category: category })
-        .orderBy("stock.unities_sold", order)
+        .where("product.categoryId = :categoryId", { categoryId: category.id })
+        .orderBy("product.price", order)
         .skip((pageNumber - 1) * limitNumber)
         .take(limitNumber)
         .getManyAndCount();
-
+  
       return [products, total];
     } catch (error) {
       throw new BadRequestException(error.message);
     }
   }
+  
+
+  async getProductsSortedByRatingForCategory(categoryId: string, order: 'ASC' | 'DESC', page: string, limit: string): Promise<[Product[], number]> {
+    try {
+      const pageNumber = parseInt(page, 10);
+      const limitNumber = parseInt(limit, 10);
+  
+      if (isNaN(pageNumber) || isNaN(limitNumber) || pageNumber <= 0 || limitNumber <= 0) {
+        throw new Error('La página y el límite deben ser números positivos');
+      }
+  
+      const category = await this.getCategoryById(categoryId);
+  
+      const [products, total] = await this.productRepository.createQueryBuilder("product")
+        .leftJoinAndSelect("product.reviews", "reviews")
+        .leftJoinAndSelect("product.stock", "stock")
+        .where("product.categoryId = :categoryId", { categoryId: category.id })
+        .orderBy("product.rating", order)
+        .skip((pageNumber - 1) * limitNumber)
+        .take(limitNumber)
+        .getManyAndCount();
+  
+      return [products, total];
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
+  }
+  
+
+  async getProductsSortedBySoldUnitsForCategory(categoryId: string, order: 'ASC' | 'DESC', page: string, limit: string): Promise<[Product[], number]> {
+    try {
+        const pageNumber = parseInt(page, 10);
+        const limitNumber = parseInt(limit, 10);
+
+        if (isNaN(pageNumber) || isNaN(limitNumber) || pageNumber <= 0 || limitNumber <= 0) {
+            throw new Error('La página y el límite deben ser números positivos');
+        }
+
+        const category = await this.getCategoryById(categoryId);
+
+        const [products, total] = await this.productRepository.createQueryBuilder("product")
+            .leftJoinAndSelect("product.stock", "stock")
+            .leftJoinAndSelect("product.reviews", "reviews")
+            .where("product.categoryId = :categoryId", { categoryId: category.id })
+            .orderBy("stock.unities_sold", order)
+            .skip((pageNumber - 1) * limitNumber)
+            .take(limitNumber)
+            .getManyAndCount();
+
+        return [products, total];
+    } catch (error) {
+        throw new BadRequestException(error.message);
+    }
+}
+
 
   //FILTER GROUP
 
   async getProductsSortedByPriceForGroup(groupId: string, order: 'ASC' | 'DESC', page: string, limit: string): Promise<[Product[], number]> {
     try {
+        const pageNumber = parseInt(page, 10);
+        const limitNumber = parseInt(limit, 10);
 
-      const pageNumber = parseInt(page, 10);
-      const limitNumber = parseInt(limit, 10);
+        if (isNaN(pageNumber) || isNaN(limitNumber) || pageNumber <= 0 || limitNumber <= 0) {
+            throw new Error('La página y el límite deben ser números positivos');
+        }
 
-      if (
-        isNaN(pageNumber) ||
-        isNaN(limitNumber) ||
-        pageNumber <= 0 ||
-        limitNumber <= 0
-      ) {
-        throw new Error('La pagina y el limite deben ser numeros positivos');
-      }
+        const group = await this.getGroupById(groupId);
+        const groupUuid = group.id; 
 
-      const group = await this.getGroupById(groupId);
+        const [products, total] = await this.productRepository.createQueryBuilder("product")
+            .leftJoin("product.category", "category")
+            .leftJoinAndSelect("product.reviews", "reviews")
+            .leftJoinAndSelect("product.stock", "stock")
+            .where("category.groupId = :groupUuid", { groupUuid }) 
+            .orderBy("product.price", order)
+            .skip((pageNumber - 1) * limitNumber)
+            .take(limitNumber)
+            .getManyAndCount();
 
-      return await this.productRepository.createQueryBuilder("product")
-        .leftJoin("product.category", "category")
-        .where("category.group = :group", { group: group })
-        .orderBy("product.price", order)
-        .skip((pageNumber - 1) * limitNumber)
-        .take(limitNumber)
-        .getManyAndCount();
-
+        return [products, total];
     } catch (error) {
-      throw new BadRequestException(error.message);
+        throw new BadRequestException(error.message);
     }
-  }
+}
 
-  async getProductsSortedByRatingForGroup(groupId: string, order: 'ASC' | 'DESC', page: string, limit: string): Promise<[Product[], number]> {
-    try {
-
+async getProductsSortedByRatingForGroup(groupId: string, order: 'ASC' | 'DESC', page: string, limit: string): Promise<[Product[], number]> {
+  try {
       const pageNumber = parseInt(page, 10);
       const limitNumber = parseInt(limit, 10);
 
-      if (
-        isNaN(pageNumber) ||
-        isNaN(limitNumber) ||
-        pageNumber <= 0 ||
-        limitNumber <= 0
-      ) {
-        throw new Error('La pagina y el limite deben ser numeros positivos');
+      if (isNaN(pageNumber) || isNaN(limitNumber) || pageNumber <= 0 || limitNumber <= 0) {
+          throw new Error('La página y el límite deben ser números positivos');
       }
 
       const group = await this.getGroupById(groupId);
+      const groupUuid = group.id;  // Extraer solo el ID del grupo
 
       const [products, total] = await this.productRepository.createQueryBuilder("product")
-        .leftJoin("product.category", "category")
-        .where("category.group = :group", { group: group })
-        .orderBy("product.rating", order)
-        .skip((pageNumber - 1) * limitNumber)
-        .take(limitNumber)
-        .getManyAndCount();
+          .leftJoin("product.category", "category")
+          .leftJoinAndSelect("product.reviews", "reviews")
+          .leftJoinAndSelect("product.stock", "stock")
+          .where("category.groupId = :groupUuid", { groupUuid })  
+          .orderBy("product.rating", order)
+          .skip((pageNumber - 1) * limitNumber)
+          .take(limitNumber)
+          .getManyAndCount();
 
       return [products, total];
-    } catch (error) {
+  } catch (error) {
       throw new BadRequestException(error.message);
-    }
   }
+}
+
 
   async getProductsSortedBySoldUnitsForGroup(groupId: string, order: 'ASC' | 'DESC', page: string, limit: string): Promise<[Product[], number]> {
     try {
+        const pageNumber = parseInt(page, 10);
+        const limitNumber = parseInt(limit, 10);
 
-      const pageNumber = parseInt(page, 10);
-      const limitNumber = parseInt(limit, 10);
+        if (isNaN(pageNumber) || isNaN(limitNumber) || pageNumber <= 0 || limitNumber <= 0) {
+            throw new Error('La pagina y el limite deben ser numeros positivos');
+        }
 
-      if (
-        isNaN(pageNumber) ||
-        isNaN(limitNumber) ||
-        pageNumber <= 0 ||
-        limitNumber <= 0
-      ) {
-        throw new Error('La pagina y el limite deben ser numeros positivos');
-      }
+        const group = await this.getGroupById(groupId);
+        const groupUuid = group.id; // Extraer solo el ID del grupo
 
-      const group = await this.getGroupById(groupId);
+        const [products, total] = await this.productRepository.createQueryBuilder("product")
+            .leftJoin("product.category", "category")
+            .where("category.groupId = :groupUuid", { groupUuid }) 
+            .leftJoinAndSelect("product.reviews", "reviews")
+            .leftJoinAndSelect("product.stock", "stock")
+            .orderBy("stock.unities_sold", order)
+            .skip((pageNumber - 1) * limitNumber)
+            .take(limitNumber)
+            .getManyAndCount();
 
-      const [products, total] = await this.productRepository.createQueryBuilder("product")
-        .leftJoin("product.category", "category")
-        .where("category.group = :group", { group: group })
-        .leftJoinAndSelect("product.stock", "stock")
-        .orderBy("stock.unities_sold", order)
-        .skip((pageNumber - 1) * limitNumber)
-        .take(limitNumber)
-        .getManyAndCount();
-
-      return [products, total];
+        return [products, total];
     } catch (error) {
-      throw new BadRequestException(error.message);
+        throw new BadRequestException(error.message);
     }
-  }
+}
 
   // CRUD CATEGORIES
   async createCategory(createCategoryDto:CreateCategoryDto, category_image: Express.Multer.File): Promise<Category>{
