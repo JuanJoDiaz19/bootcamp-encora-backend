@@ -26,6 +26,8 @@ import * as bcrypt from 'bcrypt';
 import products from './data/product.data';
 import shoppingCartStatus from './data/shopping-cart-status.data';
 import { OrderStatus } from 'src/orders/entities/order-status.entity';
+import reviews from './data/review.data';
+import addresses from './data/address.data';
 
 
 @Injectable()
@@ -57,20 +59,22 @@ export class SeederService implements OnApplicationBootstrap {
     
     try {
 
-      await this.addressRepository.delete({});
+      await this.reviewRepository.delete({});
       await this.orderStatusRepository.delete({});
       await this.orderItemRepository.delete({});
       await this.orderRepository.delete({});
+      await this.addressRepository.delete({});
+      await this.shoppingCartItemRepository.delete({});
       await this.shoppingCartRepository.delete({});
       await this.shoppingCartStatusRepository.delete({});
-      await this.shoppingCartItemRepository.delete({});
       await this.userRepository.delete({});
       await this.roleRepository.delete({});
       await this.shoppingCartItemRepository.delete({});
+      await this.stockRepository.delete({});
       await this.productRepository.delete({});
       await this.categoryRepository.delete({});
       await this.groupRepository.delete({});
-
+      
      
       await Promise.all(groups.map(async (group) => {
         await this.groupRepository.save(group);
@@ -124,6 +128,7 @@ export class SeederService implements OnApplicationBootstrap {
         userToSave.role = role;
         userToSave.password = bcrypt.hashSync(user.password, 10)
         const finalUser = await this.userRepository.save(userToSave);
+
         const status = await this.shoppingCartStatusRepository.findOneBy({status: "POR PAGAR"}) ;
         const newShoppingCart = new ShoppingCart();
         newShoppingCart.sub_total = 0.0;
@@ -140,11 +145,36 @@ export class SeederService implements OnApplicationBootstrap {
           ...restProduct,
           category
         }
-        await this.productRepository.save(productToSave);
+
+        const productSaved = await this.productRepository.save(productToSave);
+        await this.stockRepository.save({
+          stock: 50, 
+          unities_sold: 0,
+          product: productSaved
+        })
       }));
 
-      console.log("I")
+      await Promise.all(reviews.map(async (review) => {
+        const {user_email, product_name, ...restReview} = review;
+        const user = await this.userRepository.findOneBy({email: user_email});
+        const product = await this.productRepository.findOneBy({name: product_name});
+        await this.reviewRepository.save({
+          ...restReview,
+          product,
+          user, 
+        });
+      }));
 
+      await Promise.all(addresses.map(async (address) => {
+        const {userEmail, cityName, ...restAddress } = address;
+        const user = await this.userRepository.findOneBy({email: userEmail});
+        const city = await this.cityRepository.findOneBy({name: cityName});
+        await this.addressRepository.save({
+          ...restAddress,
+          user, 
+          city
+        })
+      }));
 
     } catch(error) {
       console.log('Error inserting seed data:', error);
