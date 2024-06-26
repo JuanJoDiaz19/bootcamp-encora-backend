@@ -432,18 +432,18 @@ export class OrdersService {
           throw new Error('Order not found');
         }
 
-        console.log(order)
+        //console.log(order)
 
         const name = "APPROVED"
         const approved =  await this.getStatusByName(name);
-        console.log(approved,"AA")
+        //console.log(approved,"AA")
         const today = new Date();
 
         order.status = approved
         order.shipment_date=today
         order.received_date=today
         
-        console.log(order)
+        //console.log(order)
 
         //aqui mandar el correo al usuario de que su orden ha sido enviada
         this.mailerService.sendMail({
@@ -453,11 +453,11 @@ export class OrdersService {
           html: generateEmail(order),
         });
         
-        
+        return { message: 'Orden procesada' };
       }
       
     } catch (error) {
-      throw new NotFoundException("Error en el pago");
+      throw new NotFoundException(error.message);
     }
   }
 
