@@ -424,39 +424,51 @@ export class OrdersService {
 
   async handleResponse(data:CreateResponseDto){
     try {
+  
       if (data.message === 'APPROVED') {
-        const order = await this.getOrderById(data.referenceCode);
+        const order = await this.orderRepository.findOne({
+          where: {id: data.referenceCode},
+          relations:  [
+            'user', 
+            'items.product', 
+            'status', 
+            'address', 
+            'payment_method']
+        });
         
         
         if (!order) {
           throw new Error('Order not found');
         }
 
-        console.log(order)
+        //console.log(order)
 
         const name = "APPROVED"
         const approved =  await this.getStatusByName(name);
-        console.log(approved,"AA")
+        //console.log(approved,"AA")
         const today = new Date();
 
         order.status = approved
         order.shipment_date=today
         order.received_date=today
         
-        console.log(order)
+        //console.log(order)
 
         //aqui mandar el correo al usuario de que su orden ha sido enviada
+        const htmlContent = generateEmail(order);
+        
         this.mailerService.sendMail({
           to: order.user.email,
           from: 'fitnestcorp@gmail.com',
           subject: '🛒 Confirmación de Compra 🏋️‍♀️ FitNest',
-          html: generateEmail(order),
+          text: htmlContent,
+          html: htmlContent,
         });
-        
         
       }
       
     } catch (error) {
+      console.log(error);
       throw new NotFoundException("Error en el pago");
     }
   }
