@@ -4,7 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Address } from '../entities/Address.entity';
 import { Repository } from 'typeorm';
 import { City } from '../entities/City.entity';
-import { User } from 'src/auth/entities/user.entity';
+import { User } from '../../auth/entities/user.entity';
 import { UpdateAddressDto } from '../dto/update-address.dto';
 
 @Injectable()

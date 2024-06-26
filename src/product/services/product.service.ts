@@ -143,7 +143,7 @@ export class ProductService {
         take: limitNumber,
         relations: {
           category: true,
-          stock: true,
+          
           reviews: true,
         },
       });

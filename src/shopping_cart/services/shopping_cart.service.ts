@@ -9,7 +9,7 @@ import { ProductService } from '../../product/services/product.service';
 import { PaymentService } from './payment.service';
 import { OrdersService } from '../../orders/services/orders.service';
 import { ShoppingCartResponseDto } from '../dto/response-shopping_cart.dto';
-import { AddressService } from 'src/common/services/address.service';
+import { AddressService } from '../../common/services/address.service';
 
 @Injectable()
 export class ShoppingCartService {
