@@ -44,8 +44,7 @@ export class Product {
     })
     status: string;
 
-    @OneToOne(()=>Stock)
-    @JoinColumn()
+    @OneToOne(()=>Stock, (stock)=> stock.product)
     stock:Stock
 
     @OneToMany(()=>Review, (review)=> review.product,{ nullable: true })
