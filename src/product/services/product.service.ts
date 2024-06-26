@@ -7,7 +7,7 @@ import { CreateProductDto } from '../dto/create-product.dto';
 import { UpdateProductDto } from '../dto/update-product.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Product } from '../entities/product.entity';
-import { DeleteResult, In, Repository } from 'typeorm';
+import { DeleteResult, ILike, In, Repository } from 'typeorm';
 import { Category } from '../entities/category.entity';
 import { Review } from '../entities/review.entity';
 import { Stock } from '../entities/stock.entity';
@@ -19,14 +19,17 @@ import { Group } from '../entities/group.entity';
 import { CreateReviewDto } from '../dto/create-review.dto';
 import { UpdateReviewDto } from '../dto/update-review.dto';
 import { ConfigService } from '@nestjs/config';
-import { PutObjectAclCommand, PutObjectCommand, S3Client} from '@aws-sdk/client-s3'
+import {
+  PutObjectAclCommand,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
 
 @Injectable()
 export class ProductService {
-
-  private readonly s3Client = new S3Client(
-    {region: this.configService.getOrThrow('AWS_S3_REGION') }
-  );
+  private readonly s3Client = new S3Client({
+    region: this.configService.getOrThrow('AWS_S3_REGION'),
+  });
 
   constructor(
     private readonly configService: ConfigService,
@@ -42,26 +45,31 @@ export class ProductService {
     private readonly groupRepository: Repository<Group>,
   ) {}
 
-  async createProduct(createProductDto: CreateProductDto, product_images: Array<Express.Multer.File>): Promise<Product> {
-    
+  async createProduct(
+    createProductDto: CreateProductDto,
+    product_images: Array<Express.Multer.File>,
+  ): Promise<Product> {
     createProductDto.image_urls = [];
-    
-    try{
 
-      await Promise.all(product_images.map(async (product_image) => {
-        await this.s3Client.send(
-          new PutObjectCommand({
-            Bucket: 'fitnest-bucket',
-            Key: product_image.originalname,
-            Body: product_image.buffer,
-          })
-        );
+    try {
+      await Promise.all(
+        product_images.map(async (product_image) => {
+          await this.s3Client.send(
+            new PutObjectCommand({
+              Bucket: 'fitnest-bucket',
+              Key: product_image.originalname,
+              Body: product_image.buffer,
+            }),
+          );
 
-        const image_url = `https://fitnest-bucket.s3.amazonaws.com/${product_image.originalname}`;
-        createProductDto.image_urls.push(image_url);
-      }));
+          const image_url = `https://fitnest-bucket.s3.amazonaws.com/${product_image.originalname}`;
+          createProductDto.image_urls.push(image_url);
+        }),
+      );
 
-      const category: Category = await this.categoryRepository.findOne({where:{name: createProductDto.category}});
+      const category: Category = await this.categoryRepository.findOne({
+        where: { name: createProductDto.category },
+      });
 
       if (!category) {
         throw new Error('La categoria seleccionada no existe');
@@ -188,24 +196,28 @@ export class ProductService {
     }
   }
 
-  async updateProduct(id: string, updateProductDto: UpdateProductDto, product_images: Array<Express.Multer.File>): Promise<Product> {
-    
-    updateProductDto.image_urls = []
+  async updateProduct(
+    id: string,
+    updateProductDto: UpdateProductDto,
+    product_images: Array<Express.Multer.File>,
+  ): Promise<Product> {
+    updateProductDto.image_urls = [];
 
     try {
+      await Promise.all(
+        product_images.map(async (product_image) => {
+          await this.s3Client.send(
+            new PutObjectCommand({
+              Bucket: 'fitnest-bucket',
+              Key: product_image.originalname,
+              Body: product_image.buffer,
+            }),
+          );
 
-      await Promise.all(product_images.map(async (product_image) => {
-        await this.s3Client.send(
-          new PutObjectCommand({
-            Bucket: 'fitnest-bucket',
-            Key: product_image.originalname,
-            Body: product_image.buffer,
-          })
-        );
-
-        const image_url = `https://fitnest-bucket.s3.amazonaws.com/${product_image.originalname}`;
-        updateProductDto.image_urls.push(image_url);
-      }));
+          const image_url = `https://fitnest-bucket.s3.amazonaws.com/${product_image.originalname}`;
+          updateProductDto.image_urls.push(image_url);
+        }),
+      );
 
       const product = await this.getProductById(id);
 
@@ -243,7 +255,7 @@ export class ProductService {
   // FILTERS
 
   async getProductsByCategory(
-    categoryId: string,
+    categoryName: string,
     page: string,
     limit: string,
   ): Promise<[Product[], number]> {
@@ -260,7 +272,7 @@ export class ProductService {
         throw new Error('La pagina y el limite deben ser numeros positivos');
       }
 
-      const category = await this.getCategoryById(categoryId);
+      const category = await this.getCategoryByName(categoryName);
 
       const total = category.products.length;
 
@@ -347,7 +359,7 @@ export class ProductService {
   }
 
   async getProductsByGroup(
-    groupId: string,
+    groupName: string,
     page: string,
     limit: string,
   ): Promise<[Product[], number]> {
@@ -363,7 +375,7 @@ export class ProductService {
       ) {
         throw new Error('La pagina y el limite deben ser numeros positivos');
       }
-      const group: Group = await this.getGroupById(groupId);
+      const group: Group = await this.getGroupByName(groupName);
       const categories = group.categories;
       const products = [];
 
@@ -385,9 +397,12 @@ export class ProductService {
     }
   }
 
-  async getProductsSortedByPrice(order: 'ASC' | 'DESC', page: string, limit: string): Promise<[Product[], number]> {
+  async getProductsSortedByPrice(
+    order: 'ASC' | 'DESC',
+    page: string,
+    limit: string,
+  ): Promise<[Product[], number]> {
     try {
-
       const pageNumber = parseInt(page, 10);
       const limitNumber = parseInt(limit, 10);
 
@@ -405,15 +420,18 @@ export class ProductService {
         order:{price:order},
         skip: (pageNumber - 1) * limitNumber,
         take: limitNumber,
-      })
+      });
     } catch (error) {
       throw new BadRequestException(error.message);
     }
   }
 
-  async getProductsSortedByRating(order: 'ASC' | 'DESC', page: string, limit: string): Promise<[Product[], number]> {
+  async getProductsSortedByRating(
+    order: 'ASC' | 'DESC',
+    page: string,
+    limit: string,
+  ): Promise<[Product[], number]> {
     try {
-
       const pageNumber = parseInt(page, 10);
       const limitNumber = parseInt(limit, 10);
 
@@ -431,15 +449,18 @@ export class ProductService {
         order:{rating:order},
         skip: (pageNumber - 1) * limitNumber,
         take: limitNumber,
-      })
+      });
     } catch (error) {
       throw new BadRequestException(error.message);
     }
   }
 
-  async getProductsSortedBySoldUnits(order: 'ASC' | 'DESC', page: string, limit: string): Promise<[Product[], number]> {
+  async getProductsSortedBySoldUnits(
+    order: 'ASC' | 'DESC',
+    page: string,
+    limit: string,
+  ): Promise<[Product[], number]> {
     try {
-
       const pageNumber = parseInt(page, 10);
       const limitNumber = parseInt(limit, 10);
 
@@ -465,7 +486,12 @@ export class ProductService {
     }
   }
 
-  async getProductsSortedByPriceForCategory(categoryId: string, order: 'ASC' | 'DESC', page: string, limit: string): Promise<[Product[], number]> {
+  async getProductsSortedByPriceForCategory(
+    categoryId: string,
+    order: 'ASC' | 'DESC',
+    page: string,
+    limit: string,
+  ): Promise<[Product[], number]> {
     try {
       const pageNumber = parseInt(page, 10);
       const limitNumber = parseInt(limit, 10);
@@ -548,7 +574,12 @@ export class ProductService {
 
   //FILTER GROUP
 
-  async getProductsSortedByPriceForGroup(groupId: string, order: 'ASC' | 'DESC', page: string, limit: string): Promise<[Product[], number]> {
+  async getProductsSortedByPriceForGroup(
+    groupId: string,
+    order: 'ASC' | 'DESC',
+    page: string,
+    limit: string,
+  ): Promise<[Product[], number]> {
     try {
         const pageNumber = parseInt(page, 10);
         const limitNumber = parseInt(limit, 10);
@@ -634,17 +665,19 @@ async getProductsSortedByRatingForGroup(groupId: string, order: 'ASC' | 'DESC', 
 }
 
   // CRUD CATEGORIES
-  async createCategory(createCategoryDto:CreateCategoryDto, category_image: Express.Multer.File): Promise<Category>{
+  async createCategory(
+    createCategoryDto: CreateCategoryDto,
+    category_image: Express.Multer.File,
+  ): Promise<Category> {
     try {
-
       await this.s3Client.send(
         new PutObjectCommand({
           Bucket: 'fitnest-bucket',
           Key: category_image.originalname,
           Body: category_image.buffer,
-        })
+        }),
       );
-  
+
       const image_url = `https://fitnest-bucket.s3.amazonaws.com/${category_image.originalname}`;
       createCategoryDto.image_url = image_url;
 
@@ -699,17 +732,21 @@ async getProductsSortedByRatingForGroup(groupId: string, order: 'ASC' | 'DESC', 
     }
   }
 
-  async updateCategory(id: string, updateCategoryDto: UpdateCategoryDto, category_image: Express.Multer.File): Promise<Category> {
+  async updateCategory(
+    id: string,
+    updateCategoryDto: UpdateCategoryDto,
+    category_image: Express.Multer.File,
+  ): Promise<Category> {
     try {
-      if(category_image){
+      if (category_image) {
         await this.s3Client.send(
           new PutObjectCommand({
             Bucket: 'fitnest-bucket',
             Key: category_image.originalname,
             Body: category_image.buffer,
-          })
+          }),
         );
-    
+
         const image_url = `https://fitnest-bucket.s3.amazonaws.com/${category_image.originalname}`;
         updateCategoryDto.image_url = image_url;
       }
@@ -735,6 +772,27 @@ async getProductsSortedByRatingForGroup(groupId: string, order: 'ASC' | 'DESC', 
         group: group,
       });
       return await this.categoryRepository.save(updateCategory);
+    } catch (error) {
+      throw new NotFoundException(error.message);
+    }
+  }
+
+  async getCategoryByName(categoryName: string): Promise<Category> {
+    try {
+      // ignore case
+      const category = await this.categoryRepository.findOne({
+        where: { name: ILike(categoryName) },
+        relations: {
+          products: {
+            reviews: true,
+          },
+          group: true,
+        },
+      });
+      if (!category) {
+        throw new Error(`La categoria con nombre: ${categoryName} no existe`);
+      }
+      return category;
     } catch (error) {
       throw new NotFoundException(error.message);
     }
@@ -772,19 +830,20 @@ async getProductsSortedByRatingForGroup(groupId: string, order: 'ASC' | 'DESC', 
 
   //CRUD GROUP
 
-  async createGroup(createGroupDto: CreateGroupDto, group_image: Express.Multer.File): Promise<Group> {
-    
+  async createGroup(
+    createGroupDto: CreateGroupDto,
+    group_image: Express.Multer.File,
+  ): Promise<Group> {
     try {
-
-      if(group_image){
+      if (group_image) {
         await this.s3Client.send(
           new PutObjectCommand({
             Bucket: 'fitnest-bucket',
             Key: group_image.originalname,
             Body: group_image.buffer,
-          })
+          }),
         );
-    
+
         const image_url = `https://fitnest-bucket.s3.amazonaws.com/${group_image.originalname}`;
         createGroupDto.image_url = image_url;
       }
@@ -829,6 +888,23 @@ async getProductsSortedByRatingForGroup(groupId: string, order: 'ASC' | 'DESC', 
     }
   }
 
+  async getGroupByName(groupName: string): Promise<Group> {
+    try {
+      const group = await this.groupRepository.findOne({
+        where: { name: groupName },
+        relations: {
+          categories: true,
+        },
+      });
+      if (!group) {
+        throw new Error(`El grupo con el nombre: ${groupName} no existe`);
+      }
+      return group;
+    } catch (error) {
+      throw new NotFoundException(error.message);
+    }
+  }
+
   async getGroupById(groupId: string): Promise<Group> {
     try {
       const group = await this.groupRepository.findOne({
@@ -846,17 +922,20 @@ async getProductsSortedByRatingForGroup(groupId: string, order: 'ASC' | 'DESC', 
     }
   }
 
-  async updateGroup(groupId: string, updateGroupDto: UpdateGroupDto, group_image: Express.Multer.File): Promise<Group> {
-
-    if(group_image){
+  async updateGroup(
+    groupId: string,
+    updateGroupDto: UpdateGroupDto,
+    group_image: Express.Multer.File,
+  ): Promise<Group> {
+    if (group_image) {
       await this.s3Client.send(
         new PutObjectCommand({
           Bucket: 'fitnest-bucket',
           Key: group_image.originalname,
           Body: group_image.buffer,
-        })
+        }),
       );
-  
+
       const image_url = `https://fitnest-bucket.s3.amazonaws.com/${group_image.originalname}`;
       updateGroupDto.image_url = image_url;
     }
@@ -875,7 +954,6 @@ async getProductsSortedByRatingForGroup(groupId: string, order: 'ASC' | 'DESC', 
     } catch (error) {
       throw new NotFoundException(error.message);
     }
-
   }
 
   async deleteGroup(groupId: string): Promise<DeleteResult> {
@@ -918,8 +996,9 @@ async getProductsSortedByRatingForGroup(groupId: string, order: 'ASC' | 'DESC', 
 
   async createReview(createReviewDto: CreateReviewDto): Promise<Review> {
     try {
-
-      const product: Product = await this.getProductById(createReviewDto.productId);
+      const product: Product = await this.getProductById(
+        createReviewDto.productId,
+      );
       const newReview = this.reviewRepository.create({
         ...createReviewDto,
         product,
