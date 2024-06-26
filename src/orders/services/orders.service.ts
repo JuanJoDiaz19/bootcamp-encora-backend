@@ -424,8 +424,17 @@ export class OrdersService {
 
   async handleResponse(data:CreateResponseDto){
     try {
+  
       if (data.message === 'APPROVED') {
-        const order = await this.getOrderById(data.referenceCode);
+        const order = await this.orderRepository.findOne({
+          where: {id: data.referenceCode},
+          relations:  [
+            'user', 
+            'items.product', 
+            'status', 
+            'address', 
+            'payment_method']
+        });
         
         
         if (!order) {
@@ -446,11 +455,14 @@ export class OrdersService {
         //console.log(order)
 
         //aqui mandar el correo al usuario de que su orden ha sido enviada
+        const htmlContent = generateEmail(order);
+        
         this.mailerService.sendMail({
           to: order.user.email,
           from: 'fitnestcorp@gmail.com',
           subject: '🛒 Confirmación de Compra 🏋️‍♀️ FitNest',
-          html: generateEmail(order),
+          text: htmlContent,
+          html: htmlContent,
         });
         
         return { message: 'Orden procesada' };
