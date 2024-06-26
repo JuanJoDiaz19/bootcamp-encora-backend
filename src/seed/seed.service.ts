@@ -28,6 +28,11 @@ import shoppingCartStatus from './data/shopping-cart-status.data';
 import { OrderStatus } from 'src/orders/entities/order-status.entity';
 import reviews from './data/review.data';
 import addresses from './data/address.data';
+import shopping_cart_items from './data/shopping-cart-item.data';
+import orderStatus from './data/order-status.data';
+import payment_methods from './data/payment-method.data';
+import { PaymentMethod } from 'src/orders/entities/payment_method.entity';
+import orders from './data/order.data';
 
 
 @Injectable()
@@ -38,6 +43,7 @@ export class SeederService implements OnApplicationBootstrap {
     @InjectRepository(Address) private readonly addressRepository: Repository<Address>,
     @InjectRepository(City) private readonly cityRepository: Repository<City>,
     @InjectRepository(Department) private readonly departmentRepository: Repository<Department>,
+    @InjectRepository(PaymentMethod) private readonly paymentRepository: Repository<PaymentMethod>,
     @InjectRepository(Order) private readonly orderRepository: Repository<Order>,
     @InjectRepository(OrderItem) private readonly orderItemRepository: Repository<OrderItem>,
     @InjectRepository(OrderStatus) private readonly orderStatusRepository: Repository<OrderStatus>,
@@ -52,17 +58,18 @@ export class SeederService implements OnApplicationBootstrap {
   ) { }
 
   async onApplicationBootstrap(): Promise<void> {
-    //await this.seedData();
+    await this.seedData();
   }
 
   async seedData() {
     
     try {
-
+    
       await this.reviewRepository.delete({});
+      await this.orderRepository.delete({});
       await this.orderStatusRepository.delete({});
       await this.orderItemRepository.delete({});
-      await this.orderRepository.delete({});
+      await this.paymentRepository.delete({});
       await this.addressRepository.delete({});
       await this.shoppingCartItemRepository.delete({});
       await this.shoppingCartRepository.delete({});
@@ -175,6 +182,65 @@ export class SeederService implements OnApplicationBootstrap {
           city
         })
       }));
+
+      await Promise.all(shopping_cart_items.map(async (shopping_cart_item) => {
+        const {userEmail, productName, ...restShoppingCartItem } = shopping_cart_item;
+        const user = await this.userRepository.findOneBy({email: userEmail});
+        const shoppingCart = await this.shoppingCartRepository.findOneBy({user: user});
+        const product = await this.productRepository.findOneBy({name: productName});
+        
+        await this.shoppingCartItemRepository.save({
+          ...restShoppingCartItem,
+          price: product.price,
+          sub_total: restShoppingCartItem.quantity * product.price,
+          product, 
+          shoppingCart
+        })
+      }));
+
+      await Promise.all(orderStatus.map(async (order_status) => {
+        await this.orderStatusRepository.save(order_status);
+      }));
+
+      await Promise.all(payment_methods.map(async (payment_method) => {
+        await this.paymentRepository.save(payment_method);
+      }));
+
+      await Promise.all(orders.map(async (order) => {
+        const {statusName, userEmail, addressName, paymentMethodName, ...restOrder} = order;
+        const status = await this.orderStatusRepository.findOneBy({ name: statusName });
+        const address = await this.addressRepository.findOneBy({address: addressName});
+        const user = await this.userRepository.findOneBy({email: userEmail});
+        const payment_method = await this.paymentRepository.findOneBy({name: paymentMethodName});
+        const orderToSave = {
+          ...restOrder,
+          status, 
+          user,
+          address,  
+          payment_method, 
+        }
+
+
+
+        const savedOrder = await this.orderRepository.save(orderToSave);
+
+        const product1 = await this.productRepository.findOneBy({name: "Rack de mancuernas"});
+        const product2 = await this.productRepository.findOneBy({name: "Mancuernas ajustables"});
+
+        await this.orderItemRepository.save({
+          quantity: 3, 
+          product: product1, 
+          order: savedOrder
+        })
+
+        await this.orderItemRepository.save({
+          quantity: 1, 
+          product: product2, 
+          order: savedOrder
+        })
+        
+      }));
+
 
     } catch(error) {
       console.log('Error inserting seed data:', error);
