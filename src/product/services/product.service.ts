@@ -881,7 +881,19 @@ export class ProductService {
 
   async deleteCategory(id: string): Promise<DeleteResult> {
     try {
-      const category = this.getCategoryById(id);
+      const category = await this.getCategoryById(id);
+
+      if (!category) {
+        throw new NotFoundException(
+          `No se encontró la categoría con ID: ${id}`,
+        );
+      }
+
+      if (category.products.length > 0) {
+        throw new BadRequestException(
+          'No se puede eliminar una categoría que tiene productos asociados',
+        );
+      }
       const result = await this.categoryRepository.delete(id);
       return result;
     } catch (error) {
@@ -1019,7 +1031,19 @@ export class ProductService {
 
   async deleteGroup(groupId: string): Promise<DeleteResult> {
     try {
-      const group = this.getGroupById(groupId);
+      const group = await this.getGroupById(groupId);
+
+      if (!group) {
+        throw new NotFoundException(
+          `No se encontró el grupo con ID: ${groupId}`,
+        );
+      }
+
+      if (group.categories.length > 0) {
+        throw new BadRequestException(
+          'No se puede eliminar un grupo que tiene categorías asociadas',
+        );
+      }
       const result = await this.groupRepository.delete(groupId);
       return result;
     } catch (error) {
