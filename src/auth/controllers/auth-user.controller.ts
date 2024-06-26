@@ -34,9 +34,9 @@ export class AuthUserController {
   }
 
   @Post('password-recovery')
-  async recoverPassword(@Body() email: string) {
+  async recoverPassword(@Body() email: any) {
     try {
-      return await this.authService.recoverPassword(email);
+      return await this.authService.recoverPassword(email.email);
     } catch (error) {
       return {
         success: false,
