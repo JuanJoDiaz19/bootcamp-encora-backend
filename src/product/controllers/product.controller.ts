@@ -1,4 +1,15 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseInterceptors, UploadedFiles } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Query,
+  UseInterceptors,
+  UploadedFiles,
+} from '@nestjs/common';
 import { ProductService } from '../services/product.service';
 import { CreateProductDto } from '../dto/create-product.dto';
 import { UpdateProductDto } from '../dto/update-product.dto';
@@ -14,35 +25,60 @@ export class ProductController {
   // CRUD PRODUCTS
   @Post()
   @UseInterceptors(FilesInterceptor('product_images'))
-  create(@Body() createProductDto: CreateProductDto, @UploadedFiles() product_images: Array<Express.Multer.File>): Promise<Product> {
+  create(
+    @Body() createProductDto: CreateProductDto,
+    @UploadedFiles() product_images: Array<Express.Multer.File>,
+  ): Promise<Product> {
     return this.productService.createProduct(createProductDto, product_images);
   }
 
   //Retorna todos los productos que se encuentran activos
   @Get('active')
-  getActiveProducts(@Query('page') page: string, @Query('limit') limit: string): Promise<[Product[], number]> {
-    return this.productService.getActiveProducts(page,limit);
+  getActiveProducts(
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+  ): Promise<[Product[], number]> {
+    return this.productService.getActiveProducts(page, limit);
   }
 
   //Retorna todos los productos que se encuentran activos con filtrado de atributos por dto
   @Get('info/active')
-  async getInfoActiveProducts(@Query('page') page: string, @Query('limit') limit: string): Promise<[InfoProductDto[], number]> {
-    const [products, total] = await this.productService.getActiveProducts(page, limit);
-    const infoProducts: InfoProductDto[] = products.map(product => new InfoProductDto(product));
+  async getInfoActiveProducts(
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+  ): Promise<[InfoProductDto[], number]> {
+    const [products, total] = await this.productService.getActiveProducts(
+      page,
+      limit,
+    );
+    const infoProducts: InfoProductDto[] = products.map(
+      (product) => new InfoProductDto(product),
+    );
     return [infoProducts, total];
   }
 
   //Retorna todos los productos
   @Get()
-  findAll(@Query('page') page: string, @Query('limit') limit: string): Promise<[Product[], number]> {
-    return this.productService.getAllProducts(page,limit);
+  findAll(
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+  ): Promise<[Product[], number]> {
+    return this.productService.getAllProducts(page, limit);
   }
 
   //Retorna todos los productos con filtrado de atributos por dto
   @Get('info')
-  async findAllInfo(@Query('page') page: string, @Query('limit') limit: string): Promise<[InfoProductDto[], number]> {
-    const [products, total] = await this.productService.getAllProducts(page, limit);
-    const infoProducts: InfoProductDto[] = products.map(product => new InfoProductDto(product));
+  async findAllInfo(
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+  ): Promise<[InfoProductDto[], number]> {
+    const [products, total] = await this.productService.getAllProducts(
+      page,
+      limit,
+    );
+    const infoProducts: InfoProductDto[] = products.map(
+      (product) => new InfoProductDto(product),
+    );
     return [infoProducts, total];
   }
 
@@ -53,8 +89,16 @@ export class ProductController {
 
   @Patch(':id')
   @UseInterceptors(FilesInterceptor('product_images'))
-  update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto, @UploadedFiles() product_images: Array<Express.Multer.File>) {
-    return this.productService.updateProduct(id, updateProductDto, product_images);
+  update(
+    @Param('id') id: string,
+    @Body() updateProductDto: UpdateProductDto,
+    @UploadedFiles() product_images: Array<Express.Multer.File>,
+  ) {
+    return this.productService.updateProduct(
+      id,
+      updateProductDto,
+      product_images,
+    );
   }
 
   @Delete(':id')
@@ -64,68 +108,150 @@ export class ProductController {
 
   // FILTERS
   @Get('filter/category/:name')
-  getProductsByCategory(@Param('name') category: string, @Query('page') page: string, @Query('limit') limit: string):Promise<[Product[], number]>{
+  getProductsByCategory(
+    @Param('name') category: string,
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+  ): Promise<[Product[], number]> {
     return this.productService.getProductsByCategory(category, page, limit);
   }
 
   @Get('filter/search')
-  searchProducts(@Query('keyword') keyword: string, @Query('page') page: string, @Query('limit') limit: string): Promise<[Product[], number]>{
-    return this.productService.searchProducts(keyword,page,limit);
+  searchProducts(
+    @Query('keyword') keyword: string,
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+  ): Promise<[Product[], number]> {
+    return this.productService.searchProducts(keyword, page, limit);
   }
 
   @Get('filter/group/:name')
-  getProductsByGroup(@Param('name') groupName: string, @Query('page') page: string, @Query('limit') limit: string):Promise<[Product[],number]>{
+  getProductsByGroup(
+    @Param('name') groupName: string,
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+  ): Promise<[Product[], number]> {
     return this.productService.getProductsByGroup(groupName, page, limit);
   }
 
   @Get('filter/price/:order')
-  getProductsSortedByPrice(@Param('order') order: 'ASC' | 'DESC', @Query('page') page: string, @Query('limit') limit: string):Promise<[Product[],number]>{
-    return this.productService.getProductsSortedByPrice(order,page,limit);
+  getProductsSortedByPrice(
+    @Param('order') order: 'ASC' | 'DESC',
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+  ): Promise<[Product[], number]> {
+    return this.productService.getProductsSortedByPrice(order, page, limit);
   }
 
   @Get('filter/rating/:order')
-  getProductsSortedByRating(@Param('order') order: 'ASC' | 'DESC', @Query('page') page: string, @Query('limit') limit: string):Promise<[Product[],number]>{
-    return this.productService.getProductsSortedByRating(order,page,limit);
+  getProductsSortedByRating(
+    @Param('order') order: 'ASC' | 'DESC',
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+  ): Promise<[Product[], number]> {
+    return this.productService.getProductsSortedByRating(order, page, limit);
   }
 
   @Get('filter/sold_units/:order')
-  getProductsSortedBySoldUnits(@Param('order') order: 'ASC' | 'DESC', @Query('page') page: string, @Query('limit') limit: string):Promise<[Product[],number]>{
-    return this.productService.getProductsSortedBySoldUnits(order,page,limit);
+  getProductsSortedBySoldUnits(
+    @Param('order') order: 'ASC' | 'DESC',
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+  ): Promise<[Product[], number]> {
+    return this.productService.getProductsSortedBySoldUnits(order, page, limit);
   }
 
   // FILTER PRODUCTS OF A CATEGORY BY PRICE RATING AND SOLD UNITS
 
   @Get('filter/price/:order/:categoryId')
-  getProductsSortedByPriceForCategory(@Param('categoryId') categoryId: string, @Param('order') order: 'ASC' | 'DESC', @Query('page') page: string, @Query('limit') limit: string):Promise<[Product[],number]>{
-    return this.productService.getProductsSortedByPriceForCategory(categoryId,order,page,limit);
+  getProductsSortedByPriceForCategory(
+    @Param('categoryId') categoryId: string,
+    @Param('order') order: 'ASC' | 'DESC',
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+  ): Promise<[Product[], number]> {
+    return this.productService.getProductsSortedByPriceForCategory(
+      categoryId,
+      order,
+      page,
+      limit,
+    );
   }
 
   @Get('filter/rating/:order/:categoryId')
-  getProductsSortedByRatingForCategory(@Param('categoryId') categoryId: string ,@Param('order') order: 'ASC' | 'DESC', @Query('page') page: string, @Query('limit') limit: string):Promise<[Product[],number]>{
-    return this.productService.getProductsSortedByRatingForCategory(categoryId, order,page,limit);
+  getProductsSortedByRatingForCategory(
+    @Param('categoryId') categoryId: string,
+    @Param('order') order: 'ASC' | 'DESC',
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+  ): Promise<[Product[], number]> {
+    return this.productService.getProductsSortedByRatingForCategory(
+      categoryId,
+      order,
+      page,
+      limit,
+    );
   }
 
   @Get('filter/sold_units/:order/:categoryId')
-  getProductsSortedBySoldUnitsForCategory(@Param('categoryId') categoryId: string, @Param('order') order: 'ASC' | 'DESC', @Query('page') page: string, @Query('limit') limit: string):Promise<[Product[],number]>{
-    return this.productService.getProductsSortedBySoldUnitsForCategory(categoryId,order,page,limit);
+  getProductsSortedBySoldUnitsForCategory(
+    @Param('categoryId') categoryId: string,
+    @Param('order') order: 'ASC' | 'DESC',
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+  ): Promise<[Product[], number]> {
+    return this.productService.getProductsSortedBySoldUnitsForCategory(
+      categoryId,
+      order,
+      page,
+      limit,
+    );
   }
 
   // FILTER PRODUCTS OF A GROUP BY PRICE RATING AND SOLD UNITS
 
   @Get('filter/price/:order/:groupId')
-  getProductsSortedByPriceForGroup(@Param('groupId') groupId: string, @Param('order') order: 'ASC' | 'DESC', @Query('page') page: string, @Query('limit') limit: string):Promise<[Product[],number]>{
-    return this.productService.getProductsSortedByPriceForGroup(groupId,order,page,limit);
+  getProductsSortedByPriceForGroup(
+    @Param('groupId') groupId: string,
+    @Param('order') order: 'ASC' | 'DESC',
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+  ): Promise<[Product[], number]> {
+    return this.productService.getProductsSortedByPriceForGroup(
+      groupId,
+      order,
+      page,
+      limit,
+    );
   }
 
   @Get('filter/rating/:order/:groupId')
-  getProductsSortedByRatingForGroup(@Param('groupId') groupId: string ,@Param('order') order: 'ASC' | 'DESC', @Query('page') page: string, @Query('limit') limit: string):Promise<[Product[],number]>{
-    return this.productService.getProductsSortedByRatingForGroup(groupId, order,page,limit);
+  getProductsSortedByRatingForGroup(
+    @Param('groupId') groupId: string,
+    @Param('order') order: 'ASC' | 'DESC',
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+  ): Promise<[Product[], number]> {
+    return this.productService.getProductsSortedByRatingForGroup(
+      groupId,
+      order,
+      page,
+      limit,
+    );
   }
 
   @Get('filter/sold_units/:order/:groupId')
-  getProductsSortedBySoldUnitsForGroup(@Param('groupId') groupId: string, @Param('order') order: 'ASC' | 'DESC', @Query('page') page: string, @Query('limit') limit: string):Promise<[Product[],number]>{
-    return this.productService.getProductsSortedBySoldUnitsForGroup(groupId,order,page,limit);
+  getProductsSortedBySoldUnitsForGroup(
+    @Param('groupId') groupId: string,
+    @Param('order') order: 'ASC' | 'DESC',
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+  ): Promise<[Product[], number]> {
+    return this.productService.getProductsSortedBySoldUnitsForGroup(
+      groupId,
+      order,
+      page,
+      limit,
+    );
   }
-
-
 }
