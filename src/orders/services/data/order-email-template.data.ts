@@ -14,9 +14,8 @@ export default function generateEmail(order: Order): string {
         `;
     }
 
-    return 
-    `
-    <!DOCTYPE html>
+    return `
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -37,7 +36,7 @@ export default function generateEmail(order: Order): string {
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         .header {
-            background-color: #4CAF50;
+            background-color: #212121; /* Cambia el color del fondo del header a negro */
             color: white;
             padding: 20px;
             text-align: center;
@@ -59,7 +58,7 @@ export default function generateEmail(order: Order): string {
             display: block;
         }
         .footer {
-            background-color: #4CAF50;
+            background-color: #212121; /* Cambia el color del fondo del footer a negro */
             color: white;
             text-align: center;
             padding: 10px;
@@ -82,7 +81,7 @@ export default function generateEmail(order: Order): string {
             <p><strong>Total:</strong> ${order.total_price}</p>
             <p>Nos complace informarte que tus productos 🚚 ya están en camino y estarán llegando próximamente 📦.</p>
             <p>Esperamos que disfrutes de tus nuevos productos. Si tienes alguna pregunta o necesitas asistencia, no dudes en contactarnos.</p>
-            <p>¡Gracias por confiar en FitNest! 💚</p>
+            <p>¡Gracias por confiar en FitNest! 🖤</p>
             <p>Atentamente,<br>El equipo de FitNest</p>
         </div>
         <div class="footer">
@@ -91,6 +90,7 @@ export default function generateEmail(order: Order): string {
     </div>
 </body>
 </html>
+
 
     `;
 }
