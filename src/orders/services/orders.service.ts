@@ -18,6 +18,8 @@ import { ShoppingCartItem } from '../../shopping_cart/entities/shopping_cart_ite
 import { User } from 'src/auth/entities/user.entity';
 import { Address } from 'src/common/entities/Address.entity';
 import { CreateResponseDto } from '../entities/create-response.dto';
+import { MailerService } from '@nestjs-modules/mailer';
+import generateEmail from './data/order-email-template.data';
 
 @Injectable()
 export class OrdersService {
@@ -31,6 +33,7 @@ export class OrdersService {
     private readonly statusRepository: Repository<OrderStatus>,
     @InjectRepository(PaymentMethod)
     private readonly paymentMethodRepository: Repository<PaymentMethod>,
+    private readonly mailerService: MailerService,
     private readonly productService : ProductService,
   ){}
 
@@ -441,7 +444,15 @@ export class OrdersService {
         order.received_date=today
         
         console.log(order)
+
         //aqui mandar el correo al usuario de que su orden ha sido enviada
+        this.mailerService.sendMail({
+          to: order.user.email,
+          from: 'fitnestcorp@gmail.com',
+          subject: '🛒 Confirmación de Compra 🏋️‍♀️ FitNest',
+          html: generateEmail(order),
+        });
+        
         
       }
       

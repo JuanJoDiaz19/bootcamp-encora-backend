@@ -7,7 +7,7 @@ import { CreateProductDto } from '../dto/create-product.dto';
 import { UpdateProductDto } from '../dto/update-product.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Product } from '../entities/product.entity';
-import { DeleteResult, In, Repository } from 'typeorm';
+import { DeleteResult, ILike, In, Repository } from 'typeorm';
 import { Category } from '../entities/category.entity';
 import { Review } from '../entities/review.entity';
 import { Stock } from '../entities/stock.entity';
@@ -19,14 +19,17 @@ import { Group } from '../entities/group.entity';
 import { CreateReviewDto } from '../dto/create-review.dto';
 import { UpdateReviewDto } from '../dto/update-review.dto';
 import { ConfigService } from '@nestjs/config';
-import { PutObjectAclCommand, PutObjectCommand, S3Client} from '@aws-sdk/client-s3'
+import {
+  PutObjectAclCommand,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
 
 @Injectable()
 export class ProductService {
-
-  private readonly s3Client = new S3Client(
-    {region: this.configService.getOrThrow('AWS_S3_REGION') }
-  );
+  private readonly s3Client = new S3Client({
+    region: this.configService.getOrThrow('AWS_S3_REGION'),
+  });
 
   constructor(
     private readonly configService: ConfigService,
@@ -42,26 +45,31 @@ export class ProductService {
     private readonly groupRepository: Repository<Group>,
   ) {}
 
-  async createProduct(createProductDto: CreateProductDto, product_images: Array<Express.Multer.File>): Promise<Product> {
-    
+  async createProduct(
+    createProductDto: CreateProductDto,
+    product_images: Array<Express.Multer.File>,
+  ): Promise<Product> {
     createProductDto.image_urls = [];
-    
-    try{
 
-      await Promise.all(product_images.map(async (product_image) => {
-        await this.s3Client.send(
-          new PutObjectCommand({
-            Bucket: 'fitnest-bucket',
-            Key: product_image.originalname,
-            Body: product_image.buffer,
-          })
-        );
+    try {
+      await Promise.all(
+        product_images.map(async (product_image) => {
+          await this.s3Client.send(
+            new PutObjectCommand({
+              Bucket: 'fitnest-bucket',
+              Key: product_image.originalname,
+              Body: product_image.buffer,
+            }),
+          );
 
-        const image_url = `https://fitnest-bucket.s3.amazonaws.com/${product_image.originalname}`;
-        createProductDto.image_urls.push(image_url);
-      }));
+          const image_url = `https://fitnest-bucket.s3.amazonaws.com/${product_image.originalname}`;
+          createProductDto.image_urls.push(image_url);
+        }),
+      );
 
-      const category: Category = await this.categoryRepository.findOne({where:{name: createProductDto.category}});
+      const category: Category = await this.categoryRepository.findOne({
+        where: { name: createProductDto.category },
+      });
 
       if (!category) {
         throw new Error('La categoria seleccionada no existe');
@@ -135,7 +143,7 @@ export class ProductService {
         take: limitNumber,
         relations: {
           category: true,
-          stock: true,
+
           reviews: true,
         },
       });
@@ -188,24 +196,28 @@ export class ProductService {
     }
   }
 
-  async updateProduct(id: string, updateProductDto: UpdateProductDto, product_images: Array<Express.Multer.File>): Promise<Product> {
-    
-    updateProductDto.image_urls = []
+  async updateProduct(
+    id: string,
+    updateProductDto: UpdateProductDto,
+    product_images: Array<Express.Multer.File>,
+  ): Promise<Product> {
+    updateProductDto.image_urls = [];
 
     try {
+      await Promise.all(
+        product_images.map(async (product_image) => {
+          await this.s3Client.send(
+            new PutObjectCommand({
+              Bucket: 'fitnest-bucket',
+              Key: product_image.originalname,
+              Body: product_image.buffer,
+            }),
+          );
 
-      await Promise.all(product_images.map(async (product_image) => {
-        await this.s3Client.send(
-          new PutObjectCommand({
-            Bucket: 'fitnest-bucket',
-            Key: product_image.originalname,
-            Body: product_image.buffer,
-          })
-        );
-
-        const image_url = `https://fitnest-bucket.s3.amazonaws.com/${product_image.originalname}`;
-        updateProductDto.image_urls.push(image_url);
-      }));
+          const image_url = `https://fitnest-bucket.s3.amazonaws.com/${product_image.originalname}`;
+          updateProductDto.image_urls.push(image_url);
+        }),
+      );
 
       const product = await this.getProductById(id);
 
@@ -232,8 +244,17 @@ export class ProductService {
 
   async removeProduct(id: string): Promise<DeleteResult> {
     try {
-      const product = this.getProductById(id);
-      const result = await this.productRepository.delete(id);
+      const product = await this.getProductById(id);
+
+      if (!product) {
+        throw new Error(
+          `No es posible eliminar el producto con ID: ${id}, ya que no existe`,
+        );
+      }
+
+      await this.stockRepository.delete({ product: { id: product.id } });
+      const result = await this.productRepository.delete(product.id);
+
       return result;
     } catch (error) {
       throw new NotFoundException(error.message);
@@ -243,7 +264,7 @@ export class ProductService {
   // FILTERS
 
   async getProductsByCategory(
-    categoryId: string,
+    categoryName: string,
     page: string,
     limit: string,
   ): Promise<[Product[], number]> {
@@ -260,7 +281,7 @@ export class ProductService {
         throw new Error('La pagina y el limite deben ser numeros positivos');
       }
 
-      const category = await this.getCategoryById(categoryId);
+      const category = await this.getCategoryByName(categoryName);
 
       const total = category.products.length;
 
@@ -347,7 +368,7 @@ export class ProductService {
   }
 
   async getProductsByGroup(
-    groupId: string,
+    groupName: string,
     page: string,
     limit: string,
   ): Promise<[Product[], number]> {
@@ -363,7 +384,7 @@ export class ProductService {
       ) {
         throw new Error('La pagina y el limite deben ser numeros positivos');
       }
-      const group: Group = await this.getGroupById(groupId);
+      const group: Group = await this.getGroupByName(groupName);
       const categories = group.categories;
       const products = [];
 
@@ -385,9 +406,12 @@ export class ProductService {
     }
   }
 
-  async getProductsSortedByPrice(order: 'ASC' | 'DESC', page: string, limit: string): Promise<[Product[], number]> {
+  async getProductsSortedByPrice(
+    order: 'ASC' | 'DESC',
+    page: string,
+    limit: string,
+  ): Promise<[Product[], number]> {
     try {
-
       const pageNumber = parseInt(page, 10);
       const limitNumber = parseInt(limit, 10);
 
@@ -401,18 +425,22 @@ export class ProductService {
       }
 
       return await this.productRepository.findAndCount({
-        order:{price:order},
+        relations: ['reviews', 'stock'],
+        order: { price: order },
         skip: (pageNumber - 1) * limitNumber,
         take: limitNumber,
-      })
+      });
     } catch (error) {
       throw new BadRequestException(error.message);
     }
   }
 
-  async getProductsSortedByRating(order: 'ASC' | 'DESC', page: string, limit: string): Promise<[Product[], number]> {
+  async getProductsSortedByRating(
+    order: 'ASC' | 'DESC',
+    page: string,
+    limit: string,
+  ): Promise<[Product[], number]> {
     try {
-
       const pageNumber = parseInt(page, 10);
       const limitNumber = parseInt(limit, 10);
 
@@ -426,93 +454,77 @@ export class ProductService {
       }
 
       return await this.productRepository.findAndCount({
-        order:{rating:order},
-        skip: (pageNumber - 1) * limitNumber,
-        take: limitNumber,
-      })
-    } catch (error) {
-      throw new BadRequestException(error.message);
-    }
-  }
-
-  async getProductsSortedBySoldUnits(order: 'ASC' | 'DESC', page: string, limit: string): Promise<[Product[], number]> {
-    try {
-
-      const pageNumber = parseInt(page, 10);
-      const limitNumber = parseInt(limit, 10);
-
-      if (
-        isNaN(pageNumber) ||
-        isNaN(limitNumber) ||
-        pageNumber <= 0 ||
-        limitNumber <= 0
-      ) {
-        throw new Error('La pagina y el limite deben ser numeros positivos');
-      }
-
-      return await this.productRepository.createQueryBuilder("product")
-      .leftJoinAndSelect("product.stock", "stock")
-      .orderBy("stock.unities_sold", order)
-      .skip((pageNumber - 1) * limitNumber)
-      .take(limitNumber)
-      .getManyAndCount();
-
-    } catch (error) {
-      throw new BadRequestException(error.message);
-    }
-  }
-
-  async getProductsSortedByPriceForCategory(categoryId: string, order: 'ASC' | 'DESC', page: string, limit: string): Promise<[Product[], number]> {
-    try {
-
-      const pageNumber = parseInt(page, 10);
-      const limitNumber = parseInt(limit, 10);
-
-      if (
-        isNaN(pageNumber) ||
-        isNaN(limitNumber) ||
-        pageNumber <= 0 ||
-        limitNumber <= 0
-      ) {
-        throw new Error('La pagina y el limite deben ser numeros positivos');
-      }
-
-      const category = await this.getCategoryById(categoryId);
-
-      return await this.productRepository.findAndCount({
-        where: { category: category },
-        order:{price:order},
-        skip: (pageNumber - 1) * limitNumber,
-        take: limitNumber,
-      })
-    } catch (error) {
-      throw new BadRequestException(error.message);
-    }
-  }
-
-  async getProductsSortedByRatingForCategory(categoryId: string, order: 'ASC' | 'DESC', page: string, limit: string): Promise<[Product[], number]> {
-    try {
-
-      const pageNumber = parseInt(page, 10);
-      const limitNumber = parseInt(limit, 10);
-
-      if (
-        isNaN(pageNumber) ||
-        isNaN(limitNumber) ||
-        pageNumber <= 0 ||
-        limitNumber <= 0
-      ) {
-        throw new Error('La pagina y el limite deben ser numeros positivos');
-      }
-
-      const category = await this.getCategoryById(categoryId);
-
-      const [products, total] = await this.productRepository.findAndCount({
-        where: { category: category },
+        relations: ['reviews', 'stock'],
         order: { rating: order },
         skip: (pageNumber - 1) * limitNumber,
         take: limitNumber,
       });
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
+  }
+
+  async getProductsSortedBySoldUnits(
+    order: 'ASC' | 'DESC',
+    page: string,
+    limit: string,
+  ): Promise<[Product[], number]> {
+    try {
+      const pageNumber = parseInt(page, 10);
+      const limitNumber = parseInt(limit, 10);
+
+      if (
+        isNaN(pageNumber) ||
+        isNaN(limitNumber) ||
+        pageNumber <= 0 ||
+        limitNumber <= 0
+      ) {
+        throw new Error('La pagina y el limite deben ser numeros positivos');
+      }
+
+      return await this.productRepository
+        .createQueryBuilder('product')
+        .leftJoinAndSelect('product.stock', 'stock')
+        .leftJoinAndSelect('product.reviews', 'reviews')
+        .orderBy('stock.unities_sold', order)
+        .skip((pageNumber - 1) * limitNumber)
+        .take(limitNumber)
+        .getManyAndCount();
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
+  }
+
+  async getProductsSortedByPriceForCategory(
+    categoryId: string,
+    order: 'ASC' | 'DESC',
+    page: string,
+    limit: string,
+  ): Promise<[Product[], number]> {
+    try {
+      const pageNumber = parseInt(page, 10);
+      const limitNumber = parseInt(limit, 10);
+
+      if (
+        isNaN(pageNumber) ||
+        isNaN(limitNumber) ||
+        pageNumber <= 0 ||
+        limitNumber <= 0
+      ) {
+        throw new Error('La página y el límite deben ser números positivos');
+      }
+
+      const category = await this.getCategoryById(categoryId);
+
+      const [products, total] = await this.productRepository
+        .createQueryBuilder('product')
+        .leftJoinAndSelect('product.reviews', 'reviews')
+        .leftJoinAndSelect('product.stock', 'stock')
+        .where('product.categoryId = :categoryId', { categoryId: category.id })
+        .orderBy('product.price', order)
+        .skip((pageNumber - 1) * limitNumber)
+        .take(limitNumber)
+        .getManyAndCount();
 
       return [products, total];
     } catch (error) {
@@ -520,9 +532,13 @@ export class ProductService {
     }
   }
 
-  async getProductsSortedBySoldUnitsForCategory(categoryId: string, order: 'ASC' | 'DESC', page: string, limit: string): Promise<[Product[], number]> {
+  async getProductsSortedByRatingForCategory(
+    categoryId: string,
+    order: 'ASC' | 'DESC',
+    page: string,
+    limit: string,
+  ): Promise<[Product[], number]> {
     try {
-
       const pageNumber = parseInt(page, 10);
       const limitNumber = parseInt(limit, 10);
 
@@ -532,15 +548,54 @@ export class ProductService {
         pageNumber <= 0 ||
         limitNumber <= 0
       ) {
-        throw new Error('La pagina y el limite deben ser numeros positivos');
+        throw new Error('La página y el límite deben ser números positivos');
       }
 
       const category = await this.getCategoryById(categoryId);
 
-      const [products, total] = await this.productRepository.createQueryBuilder("product")
-        .leftJoinAndSelect("product.stock", "stock")
-        .where("product.category = :category", { category: category })
-        .orderBy("stock.unities_sold", order)
+      const [products, total] = await this.productRepository
+        .createQueryBuilder('product')
+        .leftJoinAndSelect('product.reviews', 'reviews')
+        .leftJoinAndSelect('product.stock', 'stock')
+        .where('product.categoryId = :categoryId', { categoryId: category.id })
+        .orderBy('product.rating', order)
+        .skip((pageNumber - 1) * limitNumber)
+        .take(limitNumber)
+        .getManyAndCount();
+
+      return [products, total];
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
+  }
+
+  async getProductsSortedBySoldUnitsForCategory(
+    categoryId: string,
+    order: 'ASC' | 'DESC',
+    page: string,
+    limit: string,
+  ): Promise<[Product[], number]> {
+    try {
+      const pageNumber = parseInt(page, 10);
+      const limitNumber = parseInt(limit, 10);
+
+      if (
+        isNaN(pageNumber) ||
+        isNaN(limitNumber) ||
+        pageNumber <= 0 ||
+        limitNumber <= 0
+      ) {
+        throw new Error('La página y el límite deben ser números positivos');
+      }
+
+      const category = await this.getCategoryById(categoryId);
+
+      const [products, total] = await this.productRepository
+        .createQueryBuilder('product')
+        .leftJoinAndSelect('product.stock', 'stock')
+        .leftJoinAndSelect('product.reviews', 'reviews')
+        .where('product.categoryId = :categoryId', { categoryId: category.id })
+        .orderBy('stock.unities_sold', order)
         .skip((pageNumber - 1) * limitNumber)
         .take(limitNumber)
         .getManyAndCount();
@@ -553,9 +608,13 @@ export class ProductService {
 
   //FILTER GROUP
 
-  async getProductsSortedByPriceForGroup(groupId: string, order: 'ASC' | 'DESC', page: string, limit: string): Promise<[Product[], number]> {
+  async getProductsSortedByPriceForGroup(
+    groupId: string,
+    order: 'ASC' | 'DESC',
+    page: string,
+    limit: string,
+  ): Promise<[Product[], number]> {
     try {
-
       const pageNumber = parseInt(page, 10);
       const limitNumber = parseInt(limit, 10);
 
@@ -565,45 +624,19 @@ export class ProductService {
         pageNumber <= 0 ||
         limitNumber <= 0
       ) {
-        throw new Error('La pagina y el limite deben ser numeros positivos');
+        throw new Error('La página y el límite deben ser números positivos');
       }
 
       const group = await this.getGroupById(groupId);
+      const groupUuid = group.id;
 
-      return await this.productRepository.createQueryBuilder("product")
-        .leftJoin("product.category", "category")
-        .where("category.group = :group", { group: group })
-        .orderBy("product.price", order)
-        .skip((pageNumber - 1) * limitNumber)
-        .take(limitNumber)
-        .getManyAndCount();
-
-    } catch (error) {
-      throw new BadRequestException(error.message);
-    }
-  }
-
-  async getProductsSortedByRatingForGroup(groupId: string, order: 'ASC' | 'DESC', page: string, limit: string): Promise<[Product[], number]> {
-    try {
-
-      const pageNumber = parseInt(page, 10);
-      const limitNumber = parseInt(limit, 10);
-
-      if (
-        isNaN(pageNumber) ||
-        isNaN(limitNumber) ||
-        pageNumber <= 0 ||
-        limitNumber <= 0
-      ) {
-        throw new Error('La pagina y el limite deben ser numeros positivos');
-      }
-
-      const group = await this.getGroupById(groupId);
-
-      const [products, total] = await this.productRepository.createQueryBuilder("product")
-        .leftJoin("product.category", "category")
-        .where("category.group = :group", { group: group })
-        .orderBy("product.rating", order)
+      const [products, total] = await this.productRepository
+        .createQueryBuilder('product')
+        .leftJoin('product.category', 'category')
+        .leftJoinAndSelect('product.reviews', 'reviews')
+        .leftJoinAndSelect('product.stock', 'stock')
+        .where('category.groupId = :groupUuid', { groupUuid })
+        .orderBy('product.price', order)
         .skip((pageNumber - 1) * limitNumber)
         .take(limitNumber)
         .getManyAndCount();
@@ -614,9 +647,52 @@ export class ProductService {
     }
   }
 
-  async getProductsSortedBySoldUnitsForGroup(groupId: string, order: 'ASC' | 'DESC', page: string, limit: string): Promise<[Product[], number]> {
+  async getProductsSortedByRatingForGroup(
+    groupId: string,
+    order: 'ASC' | 'DESC',
+    page: string,
+    limit: string,
+  ): Promise<[Product[], number]> {
     try {
+      const pageNumber = parseInt(page, 10);
+      const limitNumber = parseInt(limit, 10);
 
+      if (
+        isNaN(pageNumber) ||
+        isNaN(limitNumber) ||
+        pageNumber <= 0 ||
+        limitNumber <= 0
+      ) {
+        throw new Error('La página y el límite deben ser números positivos');
+      }
+
+      const group = await this.getGroupById(groupId);
+      const groupUuid = group.id; // Extraer solo el ID del grupo
+
+      const [products, total] = await this.productRepository
+        .createQueryBuilder('product')
+        .leftJoin('product.category', 'category')
+        .leftJoinAndSelect('product.reviews', 'reviews')
+        .leftJoinAndSelect('product.stock', 'stock')
+        .where('category.groupId = :groupUuid', { groupUuid })
+        .orderBy('product.rating', order)
+        .skip((pageNumber - 1) * limitNumber)
+        .take(limitNumber)
+        .getManyAndCount();
+
+      return [products, total];
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
+  }
+
+  async getProductsSortedBySoldUnitsForGroup(
+    groupId: string,
+    order: 'ASC' | 'DESC',
+    page: string,
+    limit: string,
+  ): Promise<[Product[], number]> {
+    try {
       const pageNumber = parseInt(page, 10);
       const limitNumber = parseInt(limit, 10);
 
@@ -630,12 +706,15 @@ export class ProductService {
       }
 
       const group = await this.getGroupById(groupId);
+      const groupUuid = group.id; // Extraer solo el ID del grupo
 
-      const [products, total] = await this.productRepository.createQueryBuilder("product")
-        .leftJoin("product.category", "category")
-        .where("category.group = :group", { group: group })
-        .leftJoinAndSelect("product.stock", "stock")
-        .orderBy("stock.unities_sold", order)
+      const [products, total] = await this.productRepository
+        .createQueryBuilder('product')
+        .leftJoin('product.category', 'category')
+        .where('category.groupId = :groupUuid', { groupUuid })
+        .leftJoinAndSelect('product.reviews', 'reviews')
+        .leftJoinAndSelect('product.stock', 'stock')
+        .orderBy('stock.unities_sold', order)
         .skip((pageNumber - 1) * limitNumber)
         .take(limitNumber)
         .getManyAndCount();
@@ -647,17 +726,19 @@ export class ProductService {
   }
 
   // CRUD CATEGORIES
-  async createCategory(createCategoryDto:CreateCategoryDto, category_image: Express.Multer.File): Promise<Category>{
+  async createCategory(
+    createCategoryDto: CreateCategoryDto,
+    category_image: Express.Multer.File,
+  ): Promise<Category> {
     try {
-
       await this.s3Client.send(
         new PutObjectCommand({
           Bucket: 'fitnest-bucket',
           Key: category_image.originalname,
           Body: category_image.buffer,
-        })
+        }),
       );
-  
+
       const image_url = `https://fitnest-bucket.s3.amazonaws.com/${category_image.originalname}`;
       createCategoryDto.image_url = image_url;
 
@@ -712,17 +793,21 @@ export class ProductService {
     }
   }
 
-  async updateCategory(id: string, updateCategoryDto: UpdateCategoryDto, category_image: Express.Multer.File): Promise<Category> {
+  async updateCategory(
+    id: string,
+    updateCategoryDto: UpdateCategoryDto,
+    category_image: Express.Multer.File,
+  ): Promise<Category> {
     try {
-      if(category_image){
+      if (category_image) {
         await this.s3Client.send(
           new PutObjectCommand({
             Bucket: 'fitnest-bucket',
             Key: category_image.originalname,
             Body: category_image.buffer,
-          })
+          }),
         );
-    
+
         const image_url = `https://fitnest-bucket.s3.amazonaws.com/${category_image.originalname}`;
         updateCategoryDto.image_url = image_url;
       }
@@ -748,6 +833,27 @@ export class ProductService {
         group: group,
       });
       return await this.categoryRepository.save(updateCategory);
+    } catch (error) {
+      throw new NotFoundException(error.message);
+    }
+  }
+
+  async getCategoryByName(categoryName: string): Promise<Category> {
+    try {
+      // ignore case
+      const category = await this.categoryRepository.findOne({
+        where: { name: ILike(categoryName) },
+        relations: {
+          products: {
+            reviews: true,
+          },
+          group: true,
+        },
+      });
+      if (!category) {
+        throw new Error(`La categoria con nombre: ${categoryName} no existe`);
+      }
+      return category;
     } catch (error) {
       throw new NotFoundException(error.message);
     }
@@ -785,19 +891,20 @@ export class ProductService {
 
   //CRUD GROUP
 
-  async createGroup(createGroupDto: CreateGroupDto, group_image: Express.Multer.File): Promise<Group> {
-    
+  async createGroup(
+    createGroupDto: CreateGroupDto,
+    group_image: Express.Multer.File,
+  ): Promise<Group> {
     try {
-
-      if(group_image){
+      if (group_image) {
         await this.s3Client.send(
           new PutObjectCommand({
             Bucket: 'fitnest-bucket',
             Key: group_image.originalname,
             Body: group_image.buffer,
-          })
+          }),
         );
-    
+
         const image_url = `https://fitnest-bucket.s3.amazonaws.com/${group_image.originalname}`;
         createGroupDto.image_url = image_url;
       }
@@ -842,6 +949,23 @@ export class ProductService {
     }
   }
 
+  async getGroupByName(groupName: string): Promise<Group> {
+    try {
+      const group = await this.groupRepository.findOne({
+        where: { name: groupName },
+        relations: {
+          categories: true,
+        },
+      });
+      if (!group) {
+        throw new Error(`El grupo con el nombre: ${groupName} no existe`);
+      }
+      return group;
+    } catch (error) {
+      throw new NotFoundException(error.message);
+    }
+  }
+
   async getGroupById(groupId: string): Promise<Group> {
     try {
       const group = await this.groupRepository.findOne({
@@ -859,17 +983,20 @@ export class ProductService {
     }
   }
 
-  async updateGroup(groupId: string, updateGroupDto: UpdateGroupDto, group_image: Express.Multer.File): Promise<Group> {
-
-    if(group_image){
+  async updateGroup(
+    groupId: string,
+    updateGroupDto: UpdateGroupDto,
+    group_image: Express.Multer.File,
+  ): Promise<Group> {
+    if (group_image) {
       await this.s3Client.send(
         new PutObjectCommand({
           Bucket: 'fitnest-bucket',
           Key: group_image.originalname,
           Body: group_image.buffer,
-        })
+        }),
       );
-  
+
       const image_url = `https://fitnest-bucket.s3.amazonaws.com/${group_image.originalname}`;
       updateGroupDto.image_url = image_url;
     }
@@ -888,7 +1015,6 @@ export class ProductService {
     } catch (error) {
       throw new NotFoundException(error.message);
     }
-
   }
 
   async deleteGroup(groupId: string): Promise<DeleteResult> {
@@ -931,8 +1057,9 @@ export class ProductService {
 
   async createReview(createReviewDto: CreateReviewDto): Promise<Review> {
     try {
-
-      const product: Product = await this.getProductById(createReviewDto.productId);
+      const product: Product = await this.getProductById(
+        createReviewDto.productId,
+      );
       const newReview = this.reviewRepository.create({
         ...createReviewDto,
         product,

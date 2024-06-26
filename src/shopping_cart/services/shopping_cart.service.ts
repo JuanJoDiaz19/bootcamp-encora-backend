@@ -52,7 +52,7 @@ export class ShoppingCartService {
   async findOneByUser(userId: string): Promise<ShoppingCart> {
     const shoppingCart = await this.shoppingCartRepository.findOne({
       where: { user: { id: userId } },
-      relations: ['items', 'items.product'],
+      relations: ['items', 'items.product', 'user'],
     });
 
     if (!shoppingCart) {
@@ -63,18 +63,15 @@ export class ShoppingCartService {
   }
 
   async update(
-    shoppingCartId: string,
+    userId: string,
     updateShoppingCartDto: UpdateShoppingCartDto,
 ): Promise<ShoppingCartResponseDto> {
     const { productIds, operation } = updateShoppingCartDto;
 
-    const shoppingCart = await this.shoppingCartRepository.findOne({
-        where: { id: shoppingCartId },
-        relations: ['items', 'items.product','user'],
-    });
+    const shoppingCart = await this.findOneByUser(userId)
 
     if (!shoppingCart) {
-        throw new NotFoundException(`Shopping cart with ID: ${shoppingCartId} not found`);
+        throw new NotFoundException(`Shopping cart with user ID: ${userId} not found`);
     }
 
     const products = await this.productService.getProductsByIds(productIds);
@@ -166,12 +163,9 @@ export class ShoppingCartService {
 
 
 
-  async remove(id: string): Promise<void> {
+  async remove(userId: string): Promise<void> {
     try {
-      const shoppingCart = await this.shoppingCartRepository.findOne({
-        where: { id: id },
-        relations: ['items', 'items.product'],
-      });
+      const shoppingCart = await this.findOneByUser(userId)
 
       if (!shoppingCart) {
         throw new NotFoundException('Shopping Cart not found');
@@ -189,18 +183,15 @@ export class ShoppingCartService {
     }
   }
   
-  async buy(shoppingCartId: string, addressId: string): Promise<string> {
-    const shoppingCart = await this.shoppingCartRepository.findOne({
-        where: { id: shoppingCartId },
-        relations: ['items', 'items.product', 'user'],
-    });
+  async buy(userId: string, addressId: string): Promise<string> {
+    const shoppingCart = await this.findOneByUser(userId)
 
     if (!shoppingCart) {
-        throw new NotFoundException(`Shopping cart with ID: ${shoppingCartId} not found`);
+        throw new NotFoundException(`Shopping cart with user ID: ${userId} not found`);
     }
 
     if (shoppingCart.items.length === 0) {
-        throw new BadRequestException(`Shopping cart with ID: ${shoppingCartId} is empty`);
+        throw new BadRequestException(`Shopping cart with ID: ${shoppingCart.id} is empty`);
     }
 
 

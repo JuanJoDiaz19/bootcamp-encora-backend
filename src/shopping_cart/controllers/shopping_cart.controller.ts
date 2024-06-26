@@ -19,9 +19,9 @@ export class ShoppingCartController {
   findOne(@Param('id') id: string): Promise<ShoppingCart> {
     return this.shoppingCartService.findOne(id);
   }
-  @Post(':shoppinId/:addressId')
-  buy(@Param('shoppinId') shoppinId: string,@Param('addressId') addressId: string):Promise<String>{
-    return this.shoppingCartService.buy(shoppinId,addressId);
+  @Post(':userId/:addressId')
+  buy(@Param('userId') userId: string,@Param('addressId') addressId: string):Promise<String>{
+    return this.shoppingCartService.buy(userId,addressId);
   } 
 
   @Get('user/:userId')
@@ -29,12 +29,12 @@ export class ShoppingCartController {
     return this.shoppingCartService.findOneByUser(userId);
   }
 
-  @Patch(':id')
+  @Patch(':userId')
   update(@Param('id') id: string, @Body() updateShoppingCartDto: UpdateShoppingCartDto): Promise<ShoppingCartResponseDto> {
     return this.shoppingCartService.update(id, updateShoppingCartDto);
   }
 
-  @Delete(':id')
+  @Delete(':userId')
   remove(@Param('id') id: string) {
     return this.shoppingCartService.remove(id);
   }
