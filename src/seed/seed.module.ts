@@ -17,6 +17,7 @@ import { ShoppingCart } from 'src/shopping_cart/entities/shopping_cart.entity';
 import { ShoppingCartItem } from 'src/shopping_cart/entities/shopping_cart_item.entity';
 import { ShoppingCartStatus } from 'src/shopping_cart/entities/shopping_cart_status.entity';
 import { OrderStatus } from 'src/orders/entities/order-status.entity';
+import { PaymentMethod } from 'src/orders/entities/payment_method.entity';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { OrderStatus } from 'src/orders/entities/order-status.entity';
       ShoppingCartItem, 
       ShoppingCartStatus,
       OrderStatus,
+      PaymentMethod
     ]),
   ],
   providers: [SeederService],

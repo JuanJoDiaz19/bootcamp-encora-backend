@@ -18,6 +18,8 @@ import { ShoppingCartItem } from '../../shopping_cart/entities/shopping_cart_ite
 import { User } from 'src/auth/entities/user.entity';
 import { Address } from 'src/common/entities/Address.entity';
 import { CreateResponseDto } from '../entities/create-response.dto';
+import { MailerService } from '@nestjs-modules/mailer';
+import generateEmail from './data/order-email-template.data';
 
 @Injectable()
 export class OrdersService {
@@ -31,6 +33,7 @@ export class OrdersService {
     private readonly statusRepository: Repository<OrderStatus>,
     @InjectRepository(PaymentMethod)
     private readonly paymentMethodRepository: Repository<PaymentMethod>,
+    private readonly mailerService: MailerService,
     private readonly productService : ProductService,
   ){}
 
@@ -421,32 +424,52 @@ export class OrdersService {
 
   async handleResponse(data:CreateResponseDto){
     try {
+  
       if (data.message === 'APPROVED') {
-        const order = await this.getOrderById(data.referenceCode);
+        const order = await this.orderRepository.findOne({
+          where: {id: data.referenceCode},
+          relations:  [
+            'user', 
+            'items.product', 
+            'status', 
+            'address', 
+            'payment_method']
+        });
         
         
         if (!order) {
           throw new Error('Order not found');
         }
 
-        console.log(order)
+        //console.log(order)
 
         const name = "APPROVED"
         const approved =  await this.getStatusByName(name);
-        console.log(approved,"AA")
+        //console.log(approved,"AA")
         const today = new Date();
 
         order.status = approved
         order.shipment_date=today
         order.received_date=today
         
-        console.log(order)
+        //console.log(order)
+
         //aqui mandar el correo al usuario de que su orden ha sido enviada
+        const htmlContent = generateEmail(order);
         
+        this.mailerService.sendMail({
+          to: order.user.email,
+          from: 'fitnestcorp@gmail.com',
+          subject: '🛒 Confirmación de Compra 🏋️‍♀️ FitNest',
+          text: htmlContent,
+          html: htmlContent,
+        });
+        
+        return { message: 'Orden procesada' };
       }
       
     } catch (error) {
-      throw new NotFoundException("Error en el pago");
+      throw new NotFoundException(error.message);
     }
   }
 

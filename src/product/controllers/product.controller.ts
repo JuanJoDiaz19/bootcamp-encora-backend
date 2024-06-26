@@ -164,34 +164,94 @@ export class ProductController {
   // FILTER PRODUCTS OF A CATEGORY BY PRICE RATING AND SOLD UNITS
 
   @Get('filter/price/:order/category/:categoryId')
-  getProductsSortedByPriceForCategory(@Param('categoryId') categoryId: string, @Param('order') order: 'ASC' | 'DESC', @Query('page') page: string, @Query('limit') limit: string):Promise<[Product[],number]>{
-    return this.productService.getProductsSortedByPriceForCategory(categoryId,order,page,limit);
+  getProductsSortedByPriceForCategory(
+    @Param('categoryId') categoryId: string,
+    @Param('order') order: 'ASC' | 'DESC',
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+  ): Promise<[Product[], number]> {
+    return this.productService.getProductsSortedByPriceForCategory(
+      categoryId,
+      order,
+      page,
+      limit,
+    );
   }
 
   @Get('filter/rating/:order/category/:categoryId')
-  getProductsSortedByRatingForCategory(@Param('categoryId') categoryId: string ,@Param('order') order: 'ASC' | 'DESC', @Query('page') page: string, @Query('limit') limit: string):Promise<[Product[],number]>{
-    return this.productService.getProductsSortedByRatingForCategory(categoryId, order,page,limit);
+  getProductsSortedByRatingForCategory(
+    @Param('categoryId') categoryId: string,
+    @Param('order') order: 'ASC' | 'DESC',
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+  ): Promise<[Product[], number]> {
+    return this.productService.getProductsSortedByRatingForCategory(
+      categoryId,
+      order,
+      page,
+      limit,
+    );
   }
 
   @Get('filter/sold_units/:order/category/:categoryId')
-  getProductsSortedBySoldUnitsForCategory(@Param('categoryId') categoryId: string, @Param('order') order: 'ASC' | 'DESC', @Query('page') page: string, @Query('limit') limit: string):Promise<[Product[],number]>{
-    return this.productService.getProductsSortedBySoldUnitsForCategory(categoryId,order,page,limit);
+  getProductsSortedBySoldUnitsForCategory(
+    @Param('categoryId') categoryId: string,
+    @Param('order') order: 'ASC' | 'DESC',
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+  ): Promise<[Product[], number]> {
+    return this.productService.getProductsSortedBySoldUnitsForCategory(
+      categoryId,
+      order,
+      page,
+      limit,
+    );
   }
 
   // FILTER PRODUCTS OF A GROUP BY PRICE RATING AND SOLD UNITS
 
   @Get('filter/price/:order/group/:groupId')
-  getProductsSortedByPriceForGroup(@Param('groupId') groupId: string, @Param('order') order: 'ASC' | 'DESC', @Query('page') page: string, @Query('limit') limit: string):Promise<[Product[],number]>{
-    return this.productService.getProductsSortedByPriceForGroup(groupId,order,page,limit);
+  getProductsSortedByPriceForGroup(
+    @Param('groupId') groupId: string,
+    @Param('order') order: 'ASC' | 'DESC',
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+  ): Promise<[Product[], number]> {
+    return this.productService.getProductsSortedByPriceForGroup(
+      groupId,
+      order,
+      page,
+      limit,
+    );
   }
 
   @Get('filter/rating/:order/group/:groupId')
-  getProductsSortedByRatingForGroup(@Param('groupId') groupId: string ,@Param('order') order: 'ASC' | 'DESC', @Query('page') page: string, @Query('limit') limit: string):Promise<[Product[],number]>{
-    return this.productService.getProductsSortedByRatingForGroup(groupId, order,page,limit);
+  getProductsSortedByRatingForGroup(
+    @Param('groupId') groupId: string,
+    @Param('order') order: 'ASC' | 'DESC',
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+  ): Promise<[Product[], number]> {
+    return this.productService.getProductsSortedByRatingForGroup(
+      groupId,
+      order,
+      page,
+      limit,
+    );
   }
 
   @Get('filter/sold_units/:order/group/:groupId')
-  getProductsSortedBySoldUnitsForGroup(@Param('groupId') groupId: string, @Param('order') order: 'ASC' | 'DESC', @Query('page') page: string, @Query('limit') limit: string):Promise<[Product[],number]>{
-    return this.productService.getProductsSortedBySoldUnitsForGroup(groupId,order,page,limit);
+  getProductsSortedBySoldUnitsForGroup(
+    @Param('groupId') groupId: string,
+    @Param('order') order: 'ASC' | 'DESC',
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+  ): Promise<[Product[], number]> {
+    return this.productService.getProductsSortedBySoldUnitsForGroup(
+      groupId,
+      order,
+      page,
+      limit,
+    );
   }
 }
