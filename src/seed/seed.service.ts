@@ -156,7 +156,8 @@ export class SeederService implements OnApplicationBootstrap {
         const productSaved = await this.productRepository.save(productToSave);
         await this.stockRepository.save({
           stock: 50, 
-          unities_sold: 0,
+          unities_sold: 20,
+          reserved_stock: 0,
           product: productSaved
         })
       }));
