@@ -7,7 +7,6 @@ import {
   Param,
   Delete,
   Query,
-  UploadedFiles,
   UseInterceptors,
   UploadedFile,
 } from '@nestjs/common';
@@ -16,7 +15,7 @@ import { Group } from '../entities/group.entity';
 import { CreateGroupDto } from '../dto/create-group.dto';
 import { UpdateGroupDto } from '../dto/update-group.dto';
 import { DeleteResult } from 'typeorm';
-import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('group')
 export class GroupController {
@@ -44,10 +43,10 @@ export class GroupController {
     return this.productService.getGroupByName(name);
   }
 
-  // @Get(':id')
-  // getGroupById(@Param('id') groupId: string): Promise<Group> {
-  //   return this.productService.getGroupById(groupId);
-  // }
+  @Get('/id/:id')
+  getGroupById(@Param('id') groupId: string): Promise<Group> {
+    return this.productService.getGroupById(groupId);
+  }
 
   @Patch(':id')
   @UseInterceptors(FileInterceptor('group_image'))

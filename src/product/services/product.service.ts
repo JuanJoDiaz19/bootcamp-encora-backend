@@ -1015,20 +1015,24 @@ export class ProductService {
     updateGroupDto: UpdateGroupDto,
     group_image: Express.Multer.File,
   ): Promise<Group> {
-    if (group_image) {
-      await this.s3Client.send(
-        new PutObjectCommand({
-          Bucket: 'fitnest-bucket',
-          Key: group_image.originalname,
-          Body: group_image.buffer,
-        }),
-      );
-
-      const image_url = `https://fitnest-bucket.s3.amazonaws.com/${group_image.originalname}`;
-      updateGroupDto.image_url = image_url;
-    }
-
     try {
+      if (updateGroupDto.existing_image !== '' && !group_image) {
+        updateGroupDto.image_url = updateGroupDto.existing_image;
+      }
+
+      if (group_image) {
+        await this.s3Client.send(
+          new PutObjectCommand({
+            Bucket: 'fitnest-bucket',
+            Key: group_image.originalname,
+            Body: group_image.buffer,
+          }),
+        );
+
+        const image_url = `https://fitnest-bucket.s3.amazonaws.com/${group_image.originalname}`;
+        updateGroupDto.image_url = image_url;
+      }
+
       const group = await this.getGroupById(groupId);
 
       if (!group) {
@@ -1038,6 +1042,7 @@ export class ProductService {
       }
 
       const updateGroup = Object.assign(group, updateGroupDto);
+
       return await this.groupRepository.save(updateGroup);
     } catch (error) {
       throw new NotFoundException(error.message);
