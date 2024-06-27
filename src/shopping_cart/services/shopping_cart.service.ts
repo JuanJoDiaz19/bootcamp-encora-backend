@@ -10,7 +10,7 @@ import { PaymentService } from './payment.service';
 import { OrdersService } from '../../orders/services/orders.service';
 import { ShoppingCartResponseDto } from '../dto/response-shopping_cart.dto';
 import { AddressService } from '../../common/services/address.service';
-import { Stock } from 'src/product/entities/stock.entity';
+import { Stock } from '../../product/entities/stock.entity';
 
 @Injectable()
 export class ShoppingCartService {

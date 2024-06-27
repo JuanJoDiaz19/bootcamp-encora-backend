@@ -18,7 +18,7 @@ import { Role } from '../entities/role.entity';
 import { MailerService } from '@nestjs-modules/mailer';
 import { UpdateUserDto } from '../dto/update-user.dto';
 import { ShoppingCartService } from '../../shopping_cart/services/shopping_cart.service';
-import { OrdersService } from 'src/orders/services/orders.service';
+import { OrdersService } from '../../orders/services/orders.service';
 
 @Injectable()
 export class UserService {

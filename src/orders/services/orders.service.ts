@@ -15,12 +15,12 @@ import { UpdateStatusDto } from '../dto/update-status.dto';
 import { UpdatePaymentMethodDto } from '../dto/update-payment_method.dto';
 import { CreatePaymentMethodDto } from '../dto/create-payment_method.dto';
 import { ShoppingCartItem } from '../../shopping_cart/entities/shopping_cart_item.entity';
-import { User } from 'src/auth/entities/user.entity';
-import { Address } from 'src/common/entities/Address.entity';
+import { User } from '../../auth/entities/user.entity';
+import { Address } from '../../common/entities/Address.entity';
 import { CreateResponseDto } from '../entities/create-response.dto';
 import { MailerService } from '@nestjs-modules/mailer';
 import generateEmail from './data/order-email-template.data';
-import { Stock } from 'src/product/entities/stock.entity';
+import { Stock } from '../../product/entities/stock.entity';
 import * as cron from 'node-cron';
 
 @Injectable()

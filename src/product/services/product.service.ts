@@ -20,7 +20,7 @@ import { CreateReviewDto } from '../dto/create-review.dto';
 import { UpdateReviewDto } from '../dto/update-review.dto';
 import { ConfigService } from '@nestjs/config';
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
-import { User } from 'src/auth/entities/user.entity';
+import { UserService } from '../../auth/services/user.service';
 
 @Injectable()
 export class ProductService {
@@ -40,8 +40,7 @@ export class ProductService {
     private readonly stockRepository: Repository<Stock>,
     @InjectRepository(Group)
     private readonly groupRepository: Repository<Group>,
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
+    private readonly userService : UserService,
   ) {}
 
   async createProduct(
@@ -1110,12 +1109,7 @@ export class ProductService {
         createReviewDto.productId,
       );
 
-      const user = await this.userRepository.findOne({
-        where: { id: createReviewDto.userId },
-        relations: {
-          reviews: true,
-        },
-      });
+      const user = await this.userService.findUserById(createReviewDto.userId);
 
       if (!user) {
         throw new Error('El usuario no existe');
@@ -1127,12 +1121,8 @@ export class ProductService {
         user,
       });
 
-      user.reviews.push(newReview);
-      product.reviews.push(newReview);
-
       product.rating = this.calculateRating(product.reviews);
 
-      await this.userRepository.save(user);
       await this.productRepository.save(product);
 
       return await this.reviewRepository.save(newReview);

@@ -30,6 +30,7 @@ import { OrdersModule } from 'src/orders/orders.module';
         ShoppingCartModule, OrdersModule
     ],
     controllers: [AuthUserController],
-    providers: [ UserService, AdminStrategy, JwtStrategy, ClientStrategy ]
+    providers: [ UserService, AdminStrategy, JwtStrategy, ClientStrategy ],
+    exports:[UserService]
 })
 export class AuthModule {}

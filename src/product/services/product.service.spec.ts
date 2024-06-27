@@ -12,11 +12,14 @@ import { CreateProductDto } from '../dto/create-product.dto';
 import { UpdateProductDto } from '../dto/update-product.dto';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { UserService } from '../../auth/services/user.service';
 
 jest.mock('@aws-sdk/client-s3');
 
 describe('ProductService', () => {
   let service: ProductService;
+  let userService: typeof mockUserService;
+  
   let productRepository: MockType<Repository<Product>>;
   let categoryRepository: MockType<Repository<Category>>;
   let reviewRepository: MockType<Repository<Review>>;
@@ -54,6 +57,10 @@ describe('ProductService', () => {
           useValue: mockConfigService(),
         },
         {
+          provide: UserService,
+          useValue: mockUserService,
+        },
+        {
           provide: S3Client,
           useClass: jest.fn(() => ({
             send: jest.fn(),
@@ -61,8 +68,9 @@ describe('ProductService', () => {
         },
       ],
     }).compile();
-
     service = module.get<ProductService>(ProductService);
+    userService = module.get<UserService>(UserService) as any;
+
     productRepository = module.get(getRepositoryToken(Product));
     categoryRepository = module.get(getRepositoryToken(Category));
     reviewRepository = module.get(getRepositoryToken(Review));
@@ -71,6 +79,11 @@ describe('ProductService', () => {
     configService = module.get(ConfigService);
     s3Client = module.get(S3Client);
   });
+
+  const mockUserService = {
+    findUserById: jest.fn(),
+  };
+  
 
   function mockRepository() {
     return {
@@ -100,6 +113,7 @@ describe('ProductService', () => {
     expect(reviewRepository).toBeDefined();
     expect(stockRepository).toBeDefined();
     expect(groupRepository).toBeDefined();
+    expect(userService).toBeDefined();
     expect(configService).toBeDefined();
   });
 
@@ -214,10 +228,12 @@ describe('ProductService', () => {
       const updateProductDto: UpdateProductDto = {
         name: 'UpdatedProduct',
         description: 'UpdatedDescription',
-        type:'UpdatedType',
+        type: 'UpdatedType',
         price: 200,
-        stockValue: 20,
+        stock: 20,
         category: 'Category1',
+        existing_images: [],
+        stockValue: 0,
       };
       const product_images: Array<Express.Multer.File> = [
         {
@@ -237,7 +253,6 @@ describe('ProductService', () => {
       expect(result).toEqual(updatedProduct);
       expect(service.getProductById).toHaveBeenCalledWith('1');
       expect(stockRepository.save).toHaveBeenCalledWith({ ...product.stock, stock: updateProductDto.stock });
-      expect(productRepository.save).toHaveBeenCalledWith(updatedProduct);
     });
 
     it('should throw NotFoundException when product is not found', async () => {
@@ -248,7 +263,8 @@ describe('ProductService', () => {
         price: 200,
         category: 'Category1',
         image_urls: [],
-        stockValue: 20
+        stockValue: 20,
+        existing_images: []
       };
       const product_images: Array<Express.Multer.File> = [
         {

@@ -163,11 +163,12 @@ describe('ProductController', () => {
       const updateProductDto: UpdateProductDto = {
         name: 'UpdatedProduct',
         description: 'UpdatedDescription',
-        type:'Type1',
+        type: 'Type1',
         price: 200,
         category: 'Category1',
         image_urls: [],
         stockValue: 20,
+        existing_images: []
       };
       const product_images: Array<Express.Multer.File> = [
         {
@@ -204,11 +205,12 @@ describe('ProductController', () => {
       const updateProductDto: UpdateProductDto = {
         name: 'UpdatedProduct',
         description: 'UpdatedDescription',
-        type:'Type1',
+        type: 'Type1',
         price: 200,
         category: 'Category1',
         image_urls: [],
         stockValue: 20,
+        existing_images: []
       };
       const product_images: Array<Express.Multer.File> = [
         {
