@@ -201,23 +201,29 @@ export class ProductService {
     updateProductDto: UpdateProductDto,
     product_images: Array<Express.Multer.File>,
   ): Promise<Product> {
-    updateProductDto.image_urls = [];
-
     try {
-      await Promise.all(
-        product_images.map(async (product_image) => {
-          await this.s3Client.send(
-            new PutObjectCommand({
-              Bucket: 'fitnest-bucket',
-              Key: product_image.originalname,
-              Body: product_image.buffer,
-            }),
-          );
+      updateProductDto.image_urls = [];
 
-          const image_url = `https://fitnest-bucket.s3.amazonaws.com/${product_image.originalname}`;
-          updateProductDto.image_urls.push(image_url);
-        }),
-      );
+      if (updateProductDto.existing_images.length > 0) {
+        updateProductDto.image_urls = updateProductDto.existing_images;
+      }
+
+      if (product_images.length > 0) {
+        await Promise.all(
+          product_images.map(async (product_image) => {
+            await this.s3Client.send(
+              new PutObjectCommand({
+                Bucket: 'fitnest-bucket',
+                Key: product_image.originalname,
+                Body: product_image.buffer,
+              }),
+            );
+
+            const image_url = `https://fitnest-bucket.s3.amazonaws.com/${product_image.originalname}`;
+            updateProductDto.image_urls.push(image_url);
+          }),
+        );
+      }
 
       const product = await this.getProductById(id);
 
@@ -227,15 +233,24 @@ export class ProductService {
         );
       }
 
-      const stock = await this.updateStock(
-        product.stock,
-        updateProductDto.stock,
-      );
+      const stockNum = Number(updateProductDto.stock);
+
+      if (isNaN(stockNum)) {
+        throw new BadRequestException('Invalid stock value');
+      }
+
+      const stock = await this.updateStock(product.stock, stockNum);
 
       const updateProduct = Object.assign(product, {
-        ...updateProductDto,
+        name: updateProductDto.name,
+        type: updateProductDto.type,
+        description: updateProductDto.description,
+        price: updateProductDto.price,
+        category: product.category,
+        image_urls: updateProductDto.image_urls,
         stock,
       });
+
       return await this.productRepository.save(updateProduct);
     } catch (error) {
       throw new NotFoundException(error.message);
@@ -750,7 +765,7 @@ export class ProductService {
         throw Error(`La categoria con nombre: ${categoryName} ya existe`);
       }
 
-      const group = await this.getGroupById(createCategoryDto.groupId);
+      const group = await this.getGroupByName(createCategoryDto.groupName);
 
       const newCategory = this.categoryRepository.create({
         ...createCategoryDto,
