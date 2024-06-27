@@ -971,7 +971,9 @@ export class ProductService {
         skip: (pageNumber - 1) * limitNumber,
         take: limitNumber,
         relations: {
-          categories: true,
+          categories: {
+            products: true,
+          },
         },
       });
     } catch (error) {
