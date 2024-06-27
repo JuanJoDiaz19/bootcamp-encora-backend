@@ -86,4 +86,15 @@ export class AuthUserController {
     //console.log(req.user);
     return 'hello world';
   }
+
+
+  @Get(':userId/:productId')
+  async userHasProductInApprovedOrders(
+    @Param('userId') userId: string,
+    @Param('productId') productId: string,
+  ): Promise<{ hasProduct: boolean }> {
+    const hasProduct = await this.authService.userHasProductInApprovedOrders(userId, productId);
+    return { hasProduct };
+  }
+
 }

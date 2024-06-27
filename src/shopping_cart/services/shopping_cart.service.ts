@@ -1,8 +1,8 @@
-import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { CreateShoppingCartDto } from '../dto/create-shopping_cart.dto';
 import { UpdateShoppingCartDto } from '../dto/update-shopping_cart.dto';
 import { ShoppingCart } from '../entities/shopping_cart.entity';
-import { Repository } from 'typeorm';
+import {  DataSource, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ShoppingCartItem } from '../entities/shopping_cart_item.entity';
 import { ProductService } from '../../product/services/product.service';
@@ -10,6 +10,7 @@ import { PaymentService } from './payment.service';
 import { OrdersService } from '../../orders/services/orders.service';
 import { ShoppingCartResponseDto } from '../dto/response-shopping_cart.dto';
 import { AddressService } from '../../common/services/address.service';
+import { Stock } from 'src/product/entities/stock.entity';
 
 @Injectable()
 export class ShoppingCartService {
@@ -22,6 +23,7 @@ export class ShoppingCartService {
   private readonly addressService: AddressService,
   private readonly paymentService: PaymentService,
   private readonly orderService: OrdersService,
+  private readonly dataSource: DataSource,
   ){}
   
   
@@ -223,6 +225,51 @@ async removeProductFromCart(userId: string, productId: string): Promise<Shopping
     } catch (error) {
       throw new InternalServerErrorException('Error emptying shopping cart');
     }
+  }
+
+  async refreshShoppingCart(userId: string): Promise<void> {
+    const shoppingCart = await this.shoppingCartRepository.findOne({
+      where: { user: { id: userId } },
+      relations: ['items', 'items.product', 'items.product.stock'],
+    });
+
+    if (!shoppingCart) {
+      throw new NotFoundException(`Shopping cart for user ${userId} not found`);
+    }
+
+    await this.dataSource.transaction(async manager => {
+      for (const item of shoppingCart.items) {
+        const stock = await manager.findOne(Stock, {
+          where: { product: { id: item.product.id } },
+          lock: { mode: 'pessimistic_write' }
+        });
+
+        if (!stock) {
+          throw new NotFoundException(`Stock for product ${item.product.id} not found`);
+        }
+
+        if (stock.reserved_stock == stock.stock) {
+          throw new ConflictException('No hay unidades reservadas disponibles. Vuelve en 15 minutos.');
+        }
+
+        if (stock.stock < item.quantity) {
+          if (stock.stock - stock.reserved_stock >= item.quantity) {
+            item.quantity = stock.stock - stock.reserved_stock;
+          } else {
+            if (stock.stock > stock.reserved_stock) {
+              item.quantity = stock.stock - stock.reserved_stock;
+            } else {
+              await manager.remove(ShoppingCartItem, item);
+              shoppingCart.items = shoppingCart.items.filter(i => i.id !== item.id);
+            }
+          }
+          await manager.save(ShoppingCartItem, item);
+        }
+      }
+
+      shoppingCart.sub_total = shoppingCart.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+      await manager.save(ShoppingCart, shoppingCart);
+    });
   }
   
   async buy(userId: string, addressId: string): Promise<string> {
