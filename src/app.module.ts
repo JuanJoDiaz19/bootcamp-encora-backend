@@ -10,6 +10,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { SeederModule } from './seed/seed.module';
+import * as fs from 'fs';
 
 @Module({
   imports: [
@@ -30,7 +31,10 @@ import { SeederModule } from './seed/seed.module';
       username: process.env.DB_USER, 
       password: process.env.DB_PASSWORD, 
       autoLoadEntities: true, 
-      synchronize: true 
+      synchronize: true ,
+      ssl: {
+        ca: fs.readFileSync('us-east-1-bundle.pem')
+      } 
     }),
     AuthModule, 
     CommonModule,
