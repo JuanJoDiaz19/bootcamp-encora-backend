@@ -1,7 +1,9 @@
 import {
   BadRequestException,
+  Inject,
   Injectable,
   NotFoundException,
+  forwardRef,
 } from '@nestjs/common';
 import { CreateProductDto } from '../dto/create-product.dto';
 import { UpdateProductDto } from '../dto/update-product.dto';
@@ -40,6 +42,7 @@ export class ProductService {
     private readonly stockRepository: Repository<Stock>,
     @InjectRepository(Group)
     private readonly groupRepository: Repository<Group>,
+    @Inject(forwardRef(() => UserService))
     private readonly userService : UserService,
   ) {}
 
