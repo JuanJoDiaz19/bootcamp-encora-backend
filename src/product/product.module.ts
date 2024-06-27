@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { ProductService } from './services/product.service';
 import { ProductController } from './controllers/product.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -17,7 +17,7 @@ import { AuthModule } from 'src/auth/auth.module';
   imports: [
     TypeOrmModule.forFeature([Product, Category, Review, Stock, Group]),
     MulterModule,
-    AuthModule,
+    forwardRef(() => AuthModule),
   ],
   controllers: [
     ProductController,
