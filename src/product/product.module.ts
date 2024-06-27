@@ -11,7 +11,6 @@ import { CategoryController } from './controllers/category.controller';
 import { GroupController } from './controllers/group.controller';
 import { ReviewController } from './controllers/review.controller';
 import { MulterModule } from '@nestjs/platform-express';
-import { User } from 'src/auth/entities/user.entity';
 import { AuthModule } from 'src/auth/auth.module';
 
 @Module({
