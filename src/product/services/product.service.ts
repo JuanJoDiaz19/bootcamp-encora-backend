@@ -843,7 +843,7 @@ export class ProductService {
       let group;
       const groupId = updateCategoryDto.groupId;
       if (groupId) {
-        group = this.getGroupById(groupId);
+        group = await this.getGroupById(groupId);
       } else {
         group = category.group;
       }
