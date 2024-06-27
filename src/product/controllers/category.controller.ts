@@ -47,10 +47,10 @@ export class CategoryController {
     return this.productService.getCategoryByName(categoryName);
   }
 
-  // @Get(':id')
-  // getCategoryById(@Param('id') categoryId: string): Promise<Category> {
-  //   return this.productService.getCategoryById(categoryId);
-  // }
+  @Get('/id/:id')
+  getCategoryById(@Param('id') categoryId: string): Promise<Category> {
+    return this.productService.getCategoryById(categoryId);
+  }
 
   @Patch(':id')
   @UseInterceptors(FileInterceptor('category_image'))

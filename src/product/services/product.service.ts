@@ -19,11 +19,7 @@ import { Group } from '../entities/group.entity';
 import { CreateReviewDto } from '../dto/create-review.dto';
 import { UpdateReviewDto } from '../dto/update-review.dto';
 import { ConfigService } from '@nestjs/config';
-import {
-  PutObjectAclCommand,
-  PutObjectCommand,
-  S3Client,
-} from '@aws-sdk/client-s3';
+import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 
 @Injectable()
 export class ProductService {
@@ -814,6 +810,10 @@ export class ProductService {
     category_image: Express.Multer.File,
   ): Promise<Category> {
     try {
+      if (updateCategoryDto.existing_image !== '' && !category_image) {
+        updateCategoryDto.image_url = updateCategoryDto.existing_image;
+      }
+
       if (category_image) {
         await this.s3Client.send(
           new PutObjectCommand({
@@ -1228,7 +1228,6 @@ export class ProductService {
 
   async deleteReview(id: string): Promise<DeleteResult> {
     try {
-      const review = this.getReviewById(id);
       const result = await this.reviewRepository.delete(id);
       return result;
     } catch (error) {
