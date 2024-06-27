@@ -159,7 +159,49 @@ export class ShoppingCartService {
 }
 
 
+async removeProductFromCart(userId: string, productId: string): Promise<ShoppingCartResponseDto> {
+  const shoppingCart = await this.findOneByUser(userId);
 
+  if (!shoppingCart) {
+    throw new NotFoundException(`Shopping cart with user ID: ${userId} not found`);
+  }
+
+  const existingItem = shoppingCart.items.find(
+    (item) => item.product.id === productId,
+  );
+
+  if (!existingItem) {
+    throw new NotFoundException(`Item with product ID: ${productId} not found in the cart`);
+  }
+
+  shoppingCart.items = shoppingCart.items.filter(
+    (item) => item.product.id !== productId,
+  );
+  await this.shoppingCartItemRepository.remove(existingItem);
+
+  shoppingCart.sub_total = shoppingCart.items.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0,
+  );
+
+  const result = await this.shoppingCartRepository.save(shoppingCart);
+
+  const responseDto: ShoppingCartResponseDto = {
+    id: result.id,
+    items: result.items.map(item => ({
+      id: item.id,
+      productId: item.product.id,
+      quantity: item.quantity,
+      price: item.price,
+      sub_total: item.sub_total
+    })),
+    sub_total: result.sub_total,
+    status: result.status,
+    userId: result.user ? result.user.id : null,
+  };
+
+  return responseDto;
+}
 
 
 

@@ -30,8 +30,13 @@ export class ShoppingCartController {
   }
 
   @Patch(':userId')
-  update(@Param('id') id: string, @Body() updateShoppingCartDto: UpdateShoppingCartDto): Promise<ShoppingCartResponseDto> {
+  update(@Param('userId') id: string, @Body() updateShoppingCartDto: UpdateShoppingCartDto): Promise<ShoppingCartResponseDto> {
     return this.shoppingCartService.update(id, updateShoppingCartDto);
+  }
+
+  @Delete(':userId/:productId')
+  removeItem(@Param('userId') id: string,@Param('productId') productId: string): Promise<ShoppingCartResponseDto> {
+    return this.shoppingCartService.removeProductFromCart(id, productId);
   }
 
   @Delete(':userId')
