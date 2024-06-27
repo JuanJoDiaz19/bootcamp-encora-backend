@@ -12,7 +12,6 @@ import { Request } from 'express';
 import { JwtAuthGuard } from '../guards/jwt.guard';
 import { LoginUserDto } from '../dto/login-user.dto';
 import { CreateUserDto } from '../dto/create-user.dto';
-import { AuthGuard } from '@nestjs/passport';
 import { ClientGuard } from '../guards/client.guard';
 import { UserService } from '../services/user.service';
 import { AdminGuard } from '../guards/admin.guard';
