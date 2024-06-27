@@ -2,6 +2,7 @@ import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/commo
 import { AddressService } from '../services/address.service';
 import { CreateAddressDto } from '../dto/create-address.dto';
 import { UpdateAddressDto } from '../dto/update-address.dto';
+import { Address } from '../entities/Address.entity';
 
 @Controller('address')
 export class AddressController {
@@ -23,6 +24,10 @@ export class AddressController {
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.addressService.findOne(id);
+  }
+  @Get('user/:userId')
+  async getAddressesByUserId(@Param('userId') userId: string): Promise<Address[]> {
+    return this.addressService.getAddressesByUserId(userId);
   }
 
   @Patch(':id')

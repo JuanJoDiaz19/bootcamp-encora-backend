@@ -21,6 +21,17 @@ export class AddressService {
         private readonly userRepository: Repository<User>
       ) {}
 
+
+
+      async getAddressesByUserId(userId: string): Promise<Address[]> {
+        return this.addressRepository.find({
+          where: {
+            user: { id: userId },
+          },
+          relations: ['city', 'user'],
+        });
+      }
+        
     async create(createAddressDto: CreateAddressDto, user_id: string) {
         const {city_name, ...address} = createAddressDto;
         const city = await this.CityRepository.findOneBy(

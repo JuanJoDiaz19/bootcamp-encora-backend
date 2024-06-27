@@ -1,35 +1,45 @@
 import { PartialType } from '@nestjs/mapped-types';
 import { CreateProductDto } from './create-product.dto';
-import { IsArray, IsNumber, IsOptional, IsPositive, IsString } from 'class-validator';
+import {
+  IsArray,
+  IsNumber,
+  IsOptional,
+  IsPositive,
+  IsString,
+} from 'class-validator';
 
 export class UpdateProductDto extends PartialType(CreateProductDto) {
-    @IsString()
-    @IsOptional()
-    name: string;
+  @IsString()
+  @IsOptional()
+  name: string;
 
-    @IsString()
-    @IsOptional()
-    type:string;
+  @IsString()
+  @IsOptional()
+  type: string;
 
-    @IsString()
-    @IsOptional()
-    description: string;
+  @IsString()
+  @IsOptional()
+  description: string;
 
-    @IsNumber()
-    @IsOptional()
-    @IsPositive()
-    price: number;
+  @IsNumber()
+  @IsOptional()
+  @IsPositive()
+  price: number;
 
-    @IsArray()
-    @IsOptional()
-    image_url?: string[];
+  @IsArray()
+  @IsOptional()
+  existing_images: string[];
 
-    @IsString()
-    @IsOptional()
-    category: string;
+  @IsArray()
+  @IsOptional()
+  image_urls?: string[];
 
-    @IsString()
-    @IsOptional()
-    @IsPositive()
-    stockValue: number;
+  @IsString()
+  @IsOptional()
+  category: string;
+
+  @IsString()
+  @IsOptional()
+  @IsPositive()
+  stockValue: number;
 }

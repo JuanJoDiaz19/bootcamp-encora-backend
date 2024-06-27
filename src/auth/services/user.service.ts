@@ -18,6 +18,7 @@ import { Role } from '../entities/role.entity';
 import { MailerService } from '@nestjs-modules/mailer';
 import { UpdateUserDto } from '../dto/update-user.dto';
 import { ShoppingCartService } from '../../shopping_cart/services/shopping_cart.service';
+import { OrdersService } from 'src/orders/services/orders.service';
 
 @Injectable()
 export class UserService {
@@ -29,6 +30,7 @@ export class UserService {
     private readonly jwtService: JwtService,
     private readonly mailerService: MailerService,
     private readonly shoppinCartService: ShoppingCartService,
+    private readonly orderService : OrdersService,
   ) {}
 
   async createUser(createUserDto: CreateUserDto) {
@@ -330,4 +332,34 @@ export class UserService {
       }
     }
   }
+
+  async userHasProductInApprovedOrders(userId: string, productId: string): Promise<boolean> {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      relations: ['orders', 'orders.items', 'orders.items.product', 'orders.status'],
+    });
+
+    if (!user) {
+      throw new NotFoundException(`User with id ${userId} not found`);
+    }
+
+    const approvedStatus = await this.orderService.getStatusByName("APPROVED")
+
+    if (!approvedStatus) {
+      throw new NotFoundException(`Order status 'APPROVED' not found`);
+    }
+
+    for (const order of user.orders) {
+      if (order.status.id === approvedStatus.id) {
+        for (const item of order.items) {
+          if (item.product.id === productId) {
+            return true;
+          }
+        }
+      }
+    }
+
+    return false;
+  }
+
 }

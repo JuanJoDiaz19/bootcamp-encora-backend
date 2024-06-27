@@ -19,11 +19,8 @@ import { Group } from '../entities/group.entity';
 import { CreateReviewDto } from '../dto/create-review.dto';
 import { UpdateReviewDto } from '../dto/update-review.dto';
 import { ConfigService } from '@nestjs/config';
-import {
-  PutObjectAclCommand,
-  PutObjectCommand,
-  S3Client,
-} from '@aws-sdk/client-s3';
+import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { User } from 'src/auth/entities/user.entity';
 
 @Injectable()
 export class ProductService {
@@ -43,6 +40,8 @@ export class ProductService {
     private readonly stockRepository: Repository<Stock>,
     @InjectRepository(Group)
     private readonly groupRepository: Repository<Group>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
   ) {}
 
   async createProduct(
@@ -143,7 +142,7 @@ export class ProductService {
         take: limitNumber,
         relations: {
           category: true,
-
+          stock: true,
           reviews: true,
         },
       });
@@ -201,23 +200,29 @@ export class ProductService {
     updateProductDto: UpdateProductDto,
     product_images: Array<Express.Multer.File>,
   ): Promise<Product> {
-    updateProductDto.image_urls = [];
-
     try {
-      await Promise.all(
-        product_images.map(async (product_image) => {
-          await this.s3Client.send(
-            new PutObjectCommand({
-              Bucket: 'fitnest-bucket',
-              Key: product_image.originalname,
-              Body: product_image.buffer,
-            }),
-          );
+      updateProductDto.image_urls = [];
 
-          const image_url = `https://fitnest-bucket.s3.amazonaws.com/${product_image.originalname}`;
-          updateProductDto.image_urls.push(image_url);
-        }),
-      );
+      if (updateProductDto.existing_images.length > 0) {
+        updateProductDto.image_urls = updateProductDto.existing_images;
+      }
+
+      if (product_images.length > 0) {
+        await Promise.all(
+          product_images.map(async (product_image) => {
+            await this.s3Client.send(
+              new PutObjectCommand({
+                Bucket: 'fitnest-bucket',
+                Key: product_image.originalname,
+                Body: product_image.buffer,
+              }),
+            );
+
+            const image_url = `https://fitnest-bucket.s3.amazonaws.com/${product_image.originalname}`;
+            updateProductDto.image_urls.push(image_url);
+          }),
+        );
+      }
 
       const product = await this.getProductById(id);
 
@@ -227,15 +232,24 @@ export class ProductService {
         );
       }
 
-      const stock = await this.updateStock(
-        product.stock,
-        updateProductDto.stock,
-      );
+      const stockNum = Number(updateProductDto.stock);
+
+      if (isNaN(stockNum)) {
+        throw new BadRequestException('Invalid stock value');
+      }
+
+      const stock = await this.updateStock(product.stock, stockNum);
 
       const updateProduct = Object.assign(product, {
-        ...updateProductDto,
+        name: updateProductDto.name,
+        type: updateProductDto.type,
+        description: updateProductDto.description,
+        price: updateProductDto.price,
+        category: product.category,
+        image_urls: updateProductDto.image_urls,
         stock,
       });
+
       return await this.productRepository.save(updateProduct);
     } catch (error) {
       throw new NotFoundException(error.message);
@@ -750,7 +764,7 @@ export class ProductService {
         throw Error(`La categoria con nombre: ${categoryName} ya existe`);
       }
 
-      const group = await this.getGroupById(createCategoryDto.groupId);
+      const group = await this.getGroupByName(createCategoryDto.groupName);
 
       const newCategory = this.categoryRepository.create({
         ...createCategoryDto,
@@ -799,6 +813,10 @@ export class ProductService {
     category_image: Express.Multer.File,
   ): Promise<Category> {
     try {
+      if (updateCategoryDto.existing_image !== '' && !category_image) {
+        updateCategoryDto.image_url = updateCategoryDto.existing_image;
+      }
+
       if (category_image) {
         await this.s3Client.send(
           new PutObjectCommand({
@@ -953,7 +971,9 @@ export class ProductService {
         skip: (pageNumber - 1) * limitNumber,
         take: limitNumber,
         relations: {
-          categories: true,
+          categories: {
+            products: true,
+          },
         },
       });
     } catch (error) {
@@ -1000,20 +1020,24 @@ export class ProductService {
     updateGroupDto: UpdateGroupDto,
     group_image: Express.Multer.File,
   ): Promise<Group> {
-    if (group_image) {
-      await this.s3Client.send(
-        new PutObjectCommand({
-          Bucket: 'fitnest-bucket',
-          Key: group_image.originalname,
-          Body: group_image.buffer,
-        }),
-      );
-
-      const image_url = `https://fitnest-bucket.s3.amazonaws.com/${group_image.originalname}`;
-      updateGroupDto.image_url = image_url;
-    }
-
     try {
+      if (updateGroupDto.existing_image !== '' && !group_image) {
+        updateGroupDto.image_url = updateGroupDto.existing_image;
+      }
+
+      if (group_image) {
+        await this.s3Client.send(
+          new PutObjectCommand({
+            Bucket: 'fitnest-bucket',
+            Key: group_image.originalname,
+            Body: group_image.buffer,
+          }),
+        );
+
+        const image_url = `https://fitnest-bucket.s3.amazonaws.com/${group_image.originalname}`;
+        updateGroupDto.image_url = image_url;
+      }
+
       const group = await this.getGroupById(groupId);
 
       if (!group) {
@@ -1023,6 +1047,7 @@ export class ProductService {
       }
 
       const updateGroup = Object.assign(group, updateGroupDto);
+
       return await this.groupRepository.save(updateGroup);
     } catch (error) {
       throw new NotFoundException(error.message);
@@ -1084,13 +1109,30 @@ export class ProductService {
       const product: Product = await this.getProductById(
         createReviewDto.productId,
       );
+
+      const user = await this.userRepository.findOne({
+        where: { id: createReviewDto.userId },
+        relations: {
+          reviews: true,
+        },
+      });
+
+      if (!user) {
+        throw new Error('El usuario no existe');
+      }
+
       const newReview = this.reviewRepository.create({
         ...createReviewDto,
         product,
+        user,
       });
+
+      user.reviews.push(newReview);
+      product.reviews.push(newReview);
 
       product.rating = this.calculateRating(product.reviews);
 
+      await this.userRepository.save(user);
       await this.productRepository.save(product);
 
       return await this.reviewRepository.save(newReview);
@@ -1208,7 +1250,6 @@ export class ProductService {
 
   async deleteReview(id: string): Promise<DeleteResult> {
     try {
-      const review = this.getReviewById(id);
       const result = await this.reviewRepository.delete(id);
       return result;
     } catch (error) {
