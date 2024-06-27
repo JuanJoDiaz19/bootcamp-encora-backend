@@ -1,10 +1,10 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { CreateOrderDto } from '../dto/create-order.dto';
 import { UpdateOrderDto } from '../dto/update-order.dto';
 import { Order } from '../entities/order.entity';
 import { OrderItem } from '../entities/order_item.entity';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DeleteResult, Repository } from 'typeorm';
+import { DataSource, DeleteResult, Repository } from 'typeorm';
 import { CreateOrderItemDto } from '../dto/create-order_item.dto';
 import { UpdateOrderItemDto } from '../dto/update-order_item.dto';
 import { ProductService } from '../../product/services/product.service';
@@ -20,6 +20,8 @@ import { Address } from 'src/common/entities/Address.entity';
 import { CreateResponseDto } from '../entities/create-response.dto';
 import { MailerService } from '@nestjs-modules/mailer';
 import generateEmail from './data/order-email-template.data';
+import { Stock } from 'src/product/entities/stock.entity';
+import * as cron from 'node-cron';
 
 @Injectable()
 export class OrdersService {
@@ -35,7 +37,10 @@ export class OrdersService {
     private readonly paymentMethodRepository: Repository<PaymentMethod>,
     private readonly mailerService: MailerService,
     private readonly productService : ProductService,
-  ){}
+    private readonly dataSource: DataSource,
+  ){
+    cron.schedule('* * * * *', () => this.checkWaitingOrders()); 
+  }
 
   async create(createOrderDto: CreateOrderDto): Promise<Order> {
     try {
@@ -158,7 +163,7 @@ export class OrdersService {
 
         await this.orderRepository.save(savedOrder);
 
-        console.log()
+        
         return savedOrder;
     } catch (error) {
         throw new BadRequestException(error.message);
@@ -422,9 +427,105 @@ export class OrdersService {
     }
   }
 
+  async approveOrder(orderId: string): Promise<void> {
+    const order = await this.orderRepository.findOne({
+      where: {id: orderId},
+      relations:  [
+        'user', 
+        'items.product', 
+        'status', 
+        'address', 
+        'payment_method']
+    });
+    
+    
+    if (!order) {
+      throw new Error('Order not found');
+    }
+
+    await this.dataSource.transaction(async manager => {
+      
+      for (const item of order.items) {
+        const stock = await manager.findOne(Stock, {
+          where: { product: { id: item.product.id } },
+          lock: { mode: 'pessimistic_write' }
+        });
+
+        if (!stock) {
+          throw new NotFoundException(`Stock for product ${item.product.id} not found`);
+        }
+
+        
+
+        if (stock.stock < item.quantity) {
+          throw new ConflictException(`Not enough stock for product ${item.product.id}`);
+        }
+
+        stock.stock -= item.quantity;
+        stock.unities_sold += item.quantity;
+        stock.reserved_stock -= item.quantity;
+
+        await manager.save(Stock, stock);
+      }
+    });
+  }
+
+  async releaseStockForDeniedOrder(orderId: string): Promise<void> {
+    const order = await this.orderRepository.findOne({
+      where: { id: orderId },
+      relations: [
+        'user',
+        'items.product',
+        'status',
+        'address',
+        'payment_method',
+      ],
+    });
+  
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+  
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+  
+    try {
+      for (const item of order.items) {
+  
+        const stock = await queryRunner.manager.findOne(Stock, {
+          where: { product: { id: item.product.id } },
+          lock: { mode: 'pessimistic_write' },
+        });
+  
+  
+        if (!stock) {
+          throw new NotFoundException(`Stock for product ${item.product.id} not found`);
+        }
+  
+        stock.reserved_stock -= item.quantity;
+  
+        await queryRunner.manager.save(Stock, stock);
+      }
+  
+      const deniedStatus = await this.getStatusByName('DENIED');
+      order.status = deniedStatus;
+      await queryRunner.manager.save(order);
+  
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      console.error(`Error releasing stock for denied order: ${error.message}`);
+      throw error;
+    } finally {
+      await queryRunner.release();
+      console.log(`Finished releasing stock for denied order ${orderId}`);
+    }
+  }
+  
   async handleResponse(data:CreateResponseDto){
     try {
-  
+        
       if (data.message === 'APPROVED') {
         const order = await this.orderRepository.findOne({
           where: {id: data.referenceCode},
@@ -441,18 +542,18 @@ export class OrdersService {
           throw new Error('Order not found');
         }
 
-        //console.log(order)
+        await this.approveOrder(data.referenceCode);
 
         const name = "APPROVED"
         const approved =  await this.getStatusByName(name);
-        //console.log(approved,"AA")
+        
         const today = new Date();
 
         order.status = approved
         order.shipment_date=today
         order.received_date=today
         
-        //console.log(order)
+        
 
         //aqui mandar el correo al usuario de que su orden ha sido enviada
         const htmlContent = generateEmail(order);
@@ -466,10 +567,56 @@ export class OrdersService {
         });
         
         return { message: 'Orden procesada' };
+      }else{
+
+        const order = await this.orderRepository.findOne({
+          where: {id: data.referenceCode},
+          relations:  [
+            'user', 
+            'items.product', 
+            'status', 
+            'address', 
+            'payment_method']
+        });
+        
+        
+        if (!order) {
+          throw new Error('Order not found');
+        }
+
+        await this.releaseStockForDeniedOrder(data.referenceCode)
+
+        const name = "DENIED"
+        const denied =  await this.getStatusByName(name);
+        
+        order.status = denied
+
       }
       
     } catch (error) {
       throw new NotFoundException(error.message);
+    }
+  }
+
+
+  async checkWaitingOrders(): Promise<void> {
+    const name = "WAITING"
+    const waiting =  await this.getStatusByName(name);
+
+    const waitingOrders = await this.orderRepository.find({
+      where: { status: waiting },
+    });
+
+    const now = new Date();
+
+    for (const order of waitingOrders) {
+      const orderDate = new Date(order.creation_date);
+      const diffMinutes = (now.getTime() - orderDate.getTime()) / (1000 * 60);
+
+      if (diffMinutes > 20) {
+        Logger.log(`Order ${order.id} has been waiting for more than 20 minutes. Updating to denied.`);
+        await this.releaseStockForDeniedOrder(order.id);
+      }
     }
   }
 
