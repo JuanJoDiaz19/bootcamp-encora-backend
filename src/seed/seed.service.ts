@@ -58,7 +58,7 @@ export class SeederService implements OnApplicationBootstrap {
   ) { }
 
   async onApplicationBootstrap(): Promise<void> {
-    //await this.seedData();
+    await this.seedData();
   }
 
   async seedData() {
