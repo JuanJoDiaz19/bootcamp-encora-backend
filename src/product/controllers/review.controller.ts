@@ -1,11 +1,19 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseInterceptors } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Query,
+} from '@nestjs/common';
 import { ProductService } from '../services/product.service';
 import { DeleteResult } from 'typeorm';
 import { Review } from '../entities/review.entity';
 import { CreateReviewDto } from '../dto/create-review.dto';
 import { UpdateReviewDto } from '../dto/update-review.dto';
 import { InfoReviewDto } from '../dto/info-review.dto';
-import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('review')
 export class ReviewController {
