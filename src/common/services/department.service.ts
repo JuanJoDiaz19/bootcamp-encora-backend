@@ -20,7 +20,7 @@ export class DepartmentService {
 
 
     findAll() {
-        return this.departmentRepository.find();
+        return this.departmentRepository.find({ relations: ['city'] });
     }
 
     findOne(name: string) : Promise<Department>{
