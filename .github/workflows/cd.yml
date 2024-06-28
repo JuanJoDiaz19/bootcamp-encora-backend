@@ -21,7 +21,7 @@ jobs:
     - name: Install dependencies
       run: npm install
 
-    - name: Set up .env
+    - name: Set up .env file
       run: |
         echo "DB_HOST=${{ secrets.DB_HOST }}" >> .env
         echo "DB_PORT=${{ secrets.DB_PORT }}" >> .env
@@ -32,34 +32,52 @@ jobs:
         echo "MAIL_HOST=${{ secrets.MAIL_HOST }}" >> .env
         echo "MAIL_USER=${{ secrets.MAIL_USER }}" >> .env
         echo "MAIL_PASS=${{ secrets.MAIL_PASS }}" >> .env
-        echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" >> .env
-        echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> .env
-        echo "AWS_S3_REGION=${{ secrets.AWS_S3_REGION }}" >> .env
+        echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_S3_ACCESS_KEY_ID }}" >> .env
+        echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_S3_SECRET_ACCESS_KEY }}" >> .env
+        echo "AWS_S3_REGION=${{ secrets.AWS_REGION }}" >> .env
+        echo "CLIENT_ID_GOOGLE_OAUTH2=${{ secrets.CLIENT_ID_GOOGLE_OAUTH2 }}" >> .env
+        echo "CLIENT_SECRET_GOOGLE_OAUTH2=${{ secrets.CLIENT_SECRET_GOOGLE_OAUTH2 }}" >> .env
+        echo "URL_APP=${{ secrets.URL_APP }}" >> .env
+        echo "PAYU_MERCHANT_ID=${{ secrets.PAYU_MERCHANT_ID }}" >> .env
+        echo "PAYU_ACCOUNT_ID=${{ secrets.PAYU_ACCOUNT_ID }}" >> .env
+        echo "PAYU_API_KEY=${{ secrets.PAYU_API_KEY }}" >> .env
+        echo "PAYU_URL=${{ secrets.PAYU_URL }}" >> .env
+        echo "PAYU_RESPONSE_URL=${{ secrets.PAYU_RESPONSE_URL }}" >> .env
+        echo "PAYU_CONFIRMATION_URL=${{ secrets.PAYU_CONFIRMATION_URL }}" >> .env
+        echo "TEST_FLAG=${{ secrets.TEST_FLAG }}" >> .env
+        echo "CURRENCY=${{ secrets.CURRENCY }}" >> .env
+        echo "DESCRIPTION=${{ secrets.DESCRIPTION }}" >> .env
 
     - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v4 # More information on this action can be found below in the 'AWS Credentials' section
+      uses: aws-actions/configure-aws-credentials@v4
       with:
-        role-to-assume: arn:aws:iam::123456789012:role/my-github-actions-role
-        aws-region: aws-region-1
+        # role-to-assume: arn:aws:iam::123456789012:role/gh-actions-cd
+        # TODO: use a role instead of a user
+        aws-access-key-id: ${{ secrets.AWS_CD_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_CD_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_REGION }}
 
     - name: Log in to Amazon ECR
       id: ecr-login
-      uses: aws-actions/amazon-ecr-login@v1
+      uses: aws-actions/amazon-ecr-login@v2
 
     - name: Build, tag, and push Docker image
       env:
         REGISTRY: ${{ steps.ecr-login.outputs.registry }}
         REPOSITORY: ${{ secrets.AWS_ECR_REPO }}
-        IMAGE_TAG: ${{ github.sha }}
+        # IMAGE_TAG: ${{ github.sha }} removed to avoid filling up the ECR repo
+        # having all different images in ECR would be a good practice but costs would be much higher
+        # for this project, we will use the same image tag for all images, `latest`
+        IMAGE_TAG: latest
       run: |
         docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG .
         docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
 
     - name: Deploy to ECS
       env:
-        AWS_REGION: ${{ secrets.AWS_ECS_REGION }}
+        AWS_REGION: ${{ secrets.AWS_REGION }}
         ECS_SERVICE: ${{ secrets.AWS_ECS_SERVICE }}
         ECS_CLUSTER: ${{ secrets.AWS_ECS_CLUSTER }}
-        IMAGE_URI: ${{ steps.ecr-login.outputs.registry }}/${{ secrets.AWS_ECR_REPO }}:${{ github.sha }}
+        IMAGE_URI: ${{ steps.ecr-login.outputs.registry }}/${{ secrets.AWS_ECR_REPO }}:latest
       run: |
         aws ecs update-service --cluster $ECS_CLUSTER --service $ECS_SERVICE --force-new-deployment --region $AWS_REGION
