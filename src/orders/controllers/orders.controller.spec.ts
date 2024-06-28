@@ -6,7 +6,7 @@ import { UpdateOrderDto } from '../dto/update-order.dto';
 import { Order } from '../entities/order.entity';
 import { DeleteResult } from 'typeorm';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
-import { CreateResponseDto } from '../entities/create-response.dto';
+import { CreateResponseDto } from '../dto/create-response.dto';
 
 describe('OrdersController', () => {
   let controller: OrdersController;

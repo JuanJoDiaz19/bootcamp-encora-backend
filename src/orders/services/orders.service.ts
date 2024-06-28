@@ -17,7 +17,7 @@ import { CreatePaymentMethodDto } from '../dto/create-payment_method.dto';
 import { ShoppingCartItem } from '../../shopping_cart/entities/shopping_cart_item.entity';
 import { User } from '../../auth/entities/user.entity';
 import { Address } from '../../common/entities/Address.entity';
-import { CreateResponseDto } from '../entities/create-response.dto';
+import { CreateResponseDto } from '../dto/create-response.dto';
 import { MailerService } from '@nestjs-modules/mailer';
 import generateEmail from './data/order-email-template.data';
 import { Stock } from '../../product/entities/stock.entity';

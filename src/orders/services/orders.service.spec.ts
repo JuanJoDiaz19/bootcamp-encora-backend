@@ -10,7 +10,7 @@ import { CreateOrderDto } from '../dto/create-order.dto';
 import { UpdateOrderDto } from '../dto/update-order.dto';
 import { NotFoundException, BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { ProductService } from '../../product/services/product.service';
-import { CreateResponseDto } from '../entities/create-response.dto';
+import { CreateResponseDto } from '../dto/create-response.dto';
 import { MailerService } from '@nestjs-modules/mailer';
 
 describe('OrdersService', () => {

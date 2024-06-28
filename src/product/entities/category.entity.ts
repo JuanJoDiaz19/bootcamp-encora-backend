@@ -1,25 +1,32 @@
 import { Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { Product } from "./product.entity";
 import { Group } from "./group.entity";
+import { ApiProperty } from '@nestjs/swagger';
 
 @Entity()
 export class Category {
 
+    @ApiProperty({ description: 'The unique identifier of the category' })
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
-    @Column({unique:true})
+    @ApiProperty({ description: 'The name of the category', uniqueItems: true })
+    @Column({ unique: true })
     name: string;
 
-    @Column({nullable: true})
+    @ApiProperty({ description: 'The description of the category', nullable: true })
+    @Column({ nullable: true })
     description: string;
 
-    @OneToMany(() => Product,(product) => product.category)
-    products: Product[]
+    @ApiProperty({ description: 'The products belonging to the category', type: () => Product, isArray: true })
+    @OneToMany(() => Product, (product) => product.category)
+    products: Product[];
 
-    @ManyToOne(()=>Group, (group)=>group.categories)
-    group : Group;
+    @ApiProperty({ description: 'The group this category belongs to', type: () => Group })
+    @ManyToOne(() => Group, (group) => group.categories)
+    group: Group;
 
+    @ApiProperty({ description: 'The image URL of the category' })
     @Column()
     image_url: string;
 }
