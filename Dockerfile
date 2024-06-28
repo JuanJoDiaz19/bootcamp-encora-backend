@@ -1,6 +1,6 @@
 FROM node:20.15.0-alpine3.20 AS build
 
-WORKDIR /app
+WORKDIR /fitnest
 
 COPY package*.json ./
 
@@ -8,27 +8,25 @@ RUN npm install
 
 COPY tsconfig.* ./
 
+COPY us-east-1-bundle.pem ./
+
 COPY .env ./
 
 COPY src ./src
 
 RUN npm run build
 
-FROM node:20.15.0-alpine3.20 AS production
+FROM node:20.15.0-alpine3.20 AS prod
 
-RUN addgroup -S nonroot && adduser -S nonroot -G nonroot
+COPY --chown=node:node --from=build /fitnest/node_modules /fitnest/node_modules
 
-WORKDIR /app
-
-COPY --from=build /app/node_modules /app/node_modules
-
-COPY --from=build /app/dist /app/dist
+COPY --chown=node:node --from=build /fitnest/dist /fitnest/dist
 
 # least privileged user
-RUN chown -R nonroot:nonroot /app
+RUN chown -R node:node /fitnest
 
-USER nonroot
+USER node
 
 EXPOSE 3000
 
-CMD ["node", "dist/main.js"]
+CMD ["node", "/fitnest/dist/main.js"]
