@@ -350,6 +350,8 @@ export class ProductService {
 
       const [products, total] = await queryBuilder
         .skip((pageNumber - 1) * limitNumber)
+        .leftJoinAndSelect('product.stock', 'stock')
+        .leftJoinAndSelect('product.reviews', 'reviews')
         .take(limitNumber)
         .getManyAndCount();
 

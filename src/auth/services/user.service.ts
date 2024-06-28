@@ -21,6 +21,7 @@ import { ShoppingCartService } from '../../shopping_cart/services/shopping_cart.
 import { OrdersService } from '../../orders/services/orders.service';
 import { SendPQR } from '../dto/send-pqr.dto';
 import generateEmail from './data/generate-mail';
+import { Order } from '../../orders/entities/order.entity';
 
 @Injectable()
 export class UserService {
@@ -368,6 +369,30 @@ export class UserService {
       }
     }
   }
+
+  async getUserStatusOrders(userId: string, statusName: string): Promise<Order[]> {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      relations: ['orders', 'orders.items', 'orders.items.product', 'orders.status'],
+    });
+  
+    if (!user) {
+      throw new NotFoundException(`User with id ${userId} not found`);
+    }
+  
+    const status = await this.orderService.getStatusByName(statusName);
+  
+    if (!status) {
+      throw new NotFoundException(`Order status '${statusName}' not found`);
+    }
+  
+    const ordersWithStatus = user.orders.filter(order => order.status.name === statusName);
+  
+    return ordersWithStatus;
+  }
+  
+  
+
 
   async userHasProductInApprovedOrders(userId: string, productId: string): Promise<boolean> {
     const user = await this.userRepository.findOne({

@@ -19,6 +19,7 @@ import { UpdateUserDto } from '../dto/update-user.dto';
 import { AuthUser } from '../entities/authUser.entity';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiParam } from '@nestjs/swagger';
 import { SendPQR } from '../dto/send-pqr.dto';
+import { Order } from 'src/orders/entities/order.entity';
 
 @ApiTags('user')
 @Controller('user/')
@@ -68,6 +69,16 @@ export class AuthUserController {
   status(@Req() req: Request) {
     const user = req.user as AuthUser;
     return this.authService.findUserById(user.id);
+  }
+
+  @Get('/orders/:status')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get user orders by status' })
+  @ApiResponse({ status: 200, description: 'List of user orders by status', type: [Order] })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async getUserOrdersByStatus(@Req() req: Request, @Param('status') status: string): Promise<Order[]> {
+    const user = req.user as AuthUser;
+    return this.authService.getUserStatusOrders(user.id, status);
   }
 
   @Get('')
