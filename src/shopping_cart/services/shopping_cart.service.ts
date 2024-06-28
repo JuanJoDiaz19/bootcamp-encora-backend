@@ -252,7 +252,11 @@ async removeProductFromCart(userId: string, productId: string): Promise<Shopping
 
       await this.shoppingCartRepository.save(shoppingCart);
     } catch (error) {
-      throw new InternalServerErrorException('Error emptying shopping cart');
+      if (error instanceof NotFoundException) {
+        throw new NotFoundException(error.message);
+      } else {
+        throw new InternalServerErrorException('Error emptying shopping cart');
+      }
     }
   }
 
