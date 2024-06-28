@@ -29,6 +29,11 @@ export class ShoppingCartController {
     return this.shoppingCartService.findOneByUser(userId);
   }
 
+  @Get('refresh/:userId')
+  refreshItems(@Param('userId') userId: string) {
+    return this.shoppingCartService.refreshShoppingCart(userId);
+  }
+
   @Patch(':userId')
   update(@Param('userId') id: string, @Body() updateShoppingCartDto: UpdateShoppingCartDto): Promise<ShoppingCartResponseDto> {
     return this.shoppingCartService.update(id, updateShoppingCartDto);

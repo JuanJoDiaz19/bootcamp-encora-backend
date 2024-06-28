@@ -33,6 +33,29 @@ export class UserService {
     private readonly orderService : OrdersService,
   ) {}
 
+  async handleUserOauth(createUserDto: CreateUserDto) {
+    try{ 
+      const user = this.userRepository.findOneBy({email: createUserDto.email });
+
+      if(user){
+        //The user is in the system
+        
+        const {email, password} = createUserDto;
+        const userLogin: LoginUserDto = { email, password};
+        return this.login(userLogin);
+
+      } else { 
+        //The user is not in the system
+        
+        return this.createUser(createUserDto);
+        
+      }
+
+    } catch(error) { 
+      console.log(error);
+    }
+  }
+
   async createUser(createUserDto: CreateUserDto) {
     try {
         const { password, ...userData } = createUserDto;
