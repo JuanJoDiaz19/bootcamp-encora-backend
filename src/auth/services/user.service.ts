@@ -18,6 +18,7 @@ import { Role } from '../entities/role.entity';
 import { MailerService } from '@nestjs-modules/mailer';
 import { UpdateUserDto } from '../dto/update-user.dto';
 import { ShoppingCartService } from '../../shopping_cart/services/shopping_cart.service';
+import { OrdersService } from '../../orders/services/orders.service';
 
 @Injectable()
 export class UserService {
@@ -29,7 +30,31 @@ export class UserService {
     private readonly jwtService: JwtService,
     private readonly mailerService: MailerService,
     private readonly shoppinCartService: ShoppingCartService,
+    private readonly orderService : OrdersService,
   ) {}
+
+  async handleUserOauth(createUserDto: CreateUserDto) {
+    try{ 
+      const user = this.userRepository.findOneBy({email: createUserDto.email });
+
+      if(user){
+        //The user is in the system
+        
+        const {email, password} = createUserDto;
+        const userLogin: LoginUserDto = { email, password};
+        return this.login(userLogin);
+
+      } else { 
+        //The user is not in the system
+        
+        return this.createUser(createUserDto);
+        
+      }
+
+    } catch(error) { 
+      console.log(error);
+    }
+  }
 
   async createUser(createUserDto: CreateUserDto) {
     try {
@@ -93,18 +118,20 @@ export class UserService {
     };
   }
 
-  async recoverPassword(email: string) {
+  async recoverPassword(emailObject: any) {
     try {
+
+      const email = emailObject.email;
       const user = await this.userRepository.findOne({
         where: { email },
       });
-
+      
       const new_random_password = this.generateRandomString(10);
 
       user.password = bcrypt.hashSync(new_random_password, 10);
 
-      this.userRepository.save(user);
-
+      const userSaved = await this.userRepository.save(user);
+      
       this.mailerService.sendMail({
         to: user.email,
         from: 'fitnestcorp@gmail.com',
@@ -152,25 +179,51 @@ export class UserService {
             margin: 0 auto;
         }
         .header {
-            font-size: 24px;
-            margin-bottom: 20px;
+            background-color: #000000;
+            color: white;
+            text-align: center;
+            padding: 20px;
+            border-top-left-radius: 5px;
+            border-top-right-radius: 5px;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+            margin-bottom: 15px;
+        }
+        .header h2 {
+            margin: 0;
+            font-size: 18px;
         }
         .content {
             font-size: 16px;
             line-height: 1.5;
             color: #333333;
+            padding: 20px;
         }
         .footer {
+            background-color: #000000;
+            color: white;
+            text-align: center;
+            padding: 20px;
+            border-bottom-left-radius: 5px;
+            border-bottom-right-radius: 5px;
             margin-top: 30px;
-            font-size: 14px;
-            color: #777777;
+        }
+        .footer p {
+            margin: 5px 0;
+        }
+        .footer a {
+            color: white;
+            text-decoration: none;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            Restablecimiento de Contraseña
+            <h1>🔑 Restablecimiento de Contraseña 🔒</h1>
+            <h2>FitNest</h2>
         </div>
         <div class="content">
             <p>Estimado/a ${user.first_name},</p>
@@ -178,19 +231,17 @@ export class UserService {
             <p>Tu nueva contraseña temporal es: <strong>${new_random_password}</strong></p>
             <p>Por favor, inicia sesión en tu cuenta con esta nueva contraseña. Te recomendamos que cambies esta contraseña temporal por una nueva contraseña personalizada lo antes posible para garantizar la seguridad de tu cuenta. Puedes hacerlo accediendo a la configuración de tu perfil dentro del sistema.</p>
             <p>Si no has solicitado este cambio de contraseña, te pedimos que te pongas en contacto con nuestro equipo de soporte de inmediato para que podamos ayudarte a proteger tu cuenta.</p>
-            <p>Gracias por tu comprensión y disculpa cualquier inconveniente que esto pueda causar.</p>
+            <p>Gracias por tu comprensión y disculpa cualquier inconveniente que esto pueda causar. 🙏</p>
         </div>
         <div class="footer">
-            <p>Saludos cordiales,</p>
-            <p>El equipo de FitNest</p>
+            <p>Saludos cordiales del Equipo FitNest</p>
             <p>Email: <a href="mailto:fitnestcorp@gmail.com">fitnestcorp@gmail.com</a></p>
-            <p>Teléfono: 3181234567</p>
-            <p>Web: <a href="http://fitnestcorp.com">fitnestcorp.com</a></p>
+            <p>Teléfono: 3181234567 ☎️</p>
+            <p>Web: <a href="http://fitnestcorp.com">fitnestcorp.com</a> 🌐</p>
         </div>
     </div>
 </body>
 </html>
-
         `,
       });
       return {
@@ -198,6 +249,7 @@ export class UserService {
         message: 'Password recovery email sent successfully.',
       };
     } catch (error) {
+      console.log(error);
       throw new HttpException(
         {
           success: false,
@@ -303,4 +355,34 @@ export class UserService {
       }
     }
   }
+
+  async userHasProductInApprovedOrders(userId: string, productId: string): Promise<boolean> {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      relations: ['orders', 'orders.items', 'orders.items.product', 'orders.status'],
+    });
+
+    if (!user) {
+      throw new NotFoundException(`User with id ${userId} not found`);
+    }
+
+    const approvedStatus = await this.orderService.getStatusByName("APPROVED")
+
+    if (!approvedStatus) {
+      throw new NotFoundException(`Order status 'APPROVED' not found`);
+    }
+
+    for (const order of user.orders) {
+      if (order.status.id === approvedStatus.id) {
+        for (const item of order.items) {
+          if (item.product.id === productId) {
+            return true;
+          }
+        }
+      }
+    }
+
+    return false;
+  }
+
 }

@@ -134,16 +134,16 @@ describe('AuthUserController', () => {
         success: true,
         message: 'Password recovery email sent successfully.',
       };
-      const email = 'test@example.com';
+      const email = {email:'test@example.com'};
 
       jest.spyOn(service, 'recoverPassword').mockResolvedValue(result);
 
       expect(await controller.recoverPassword(email)).toEqual(result);
-      expect(service.recoverPassword).toHaveBeenCalledWith(email);
+      expect(service.recoverPassword).toHaveBeenCalledWith(email.email);
     });
 
     it('should return an error response when UserService.recoverPassword fails', async () => {
-      const email = 'test@example.com';
+      const email = {email:'test@example.com'};
 
       jest.spyOn(service, 'recoverPassword').mockRejectedValue(new HttpException(
         {
@@ -160,7 +160,7 @@ describe('AuthUserController', () => {
         message: 'An error occurred while recovering the password.',
         error: 'Failed to recover password.',
       });
-      expect(service.recoverPassword).toHaveBeenCalledWith(email);
+      expect(service.recoverPassword).toHaveBeenCalledWith(email.email);
     });
 
   });

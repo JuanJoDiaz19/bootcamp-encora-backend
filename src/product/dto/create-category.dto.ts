@@ -11,7 +11,7 @@ export class CreateCategoryDto{
 
     @IsNotEmpty()
     @IsUUID()
-    groupId: string;
+    groupName: string;
 
     @IsString()
     image_url: string;

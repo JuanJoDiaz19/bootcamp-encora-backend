@@ -12,7 +12,6 @@ import { Request } from 'express';
 import { JwtAuthGuard } from '../guards/jwt.guard';
 import { LoginUserDto } from '../dto/login-user.dto';
 import { CreateUserDto } from '../dto/create-user.dto';
-import { AuthGuard } from '@nestjs/passport';
 import { ClientGuard } from '../guards/client.guard';
 import { UserService } from '../services/user.service';
 import { AdminGuard } from '../guards/admin.guard';
@@ -34,9 +33,9 @@ export class AuthUserController {
   }
 
   @Post('password-recovery')
-  async recoverPassword(@Body() email: string) {
+  async recoverPassword(@Body() email: any) {
     try {
-      return await this.authService.recoverPassword(email);
+      return await this.authService.recoverPassword(email.email);
     } catch (error) {
       return {
         success: false,
@@ -87,4 +86,15 @@ export class AuthUserController {
     //console.log(req.user);
     return 'hello world';
   }
+
+
+  @Get(':userId/:productId')
+  async userHasProductInApprovedOrders(
+    @Param('userId') userId: string,
+    @Param('productId') productId: string,
+  ): Promise<{ hasProduct: boolean }> {
+    const hasProduct = await this.authService.userHasProductInApprovedOrders(userId, productId);
+    return { hasProduct };
+  }
+
 }

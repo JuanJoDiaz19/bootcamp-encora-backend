@@ -13,6 +13,7 @@ import { UpdateUserDto } from '../dto/update-user.dto';
 import { BadRequestException, NotFoundException, UnauthorizedException, HttpException, HttpStatus, InternalServerErrorException } from '@nestjs/common';
 import { ShoppingCart } from '../../shopping_cart/entities/shopping_cart.entity';
 import * as bcrypt from 'bcrypt';
+import { OrdersService } from '../../orders/services/orders.service';
 
 describe('UserService', () => {
     let service: UserService;
@@ -21,6 +22,7 @@ describe('UserService', () => {
     let jwtService: JwtService;
     let mailerService: MailerService;
     let shoppingCartService: ShoppingCartService;
+    let orderService: MockType<OrdersService>; 
   
     beforeEach(async () => {
       const module: TestingModule = await Test.createTestingModule({
@@ -53,6 +55,10 @@ describe('UserService', () => {
               createShoppingCart: jest.fn(),
             },
           },
+          {
+            provide: OrdersService,
+            useValue: {},
+          },
         ],
       }).compile();
   
@@ -62,6 +68,7 @@ describe('UserService', () => {
       jwtService = module.get(JwtService);
       mailerService = module.get(MailerService);
       shoppingCartService = module.get(ShoppingCartService);
+      orderService = module.get(OrdersService);
     });
   
     function mockRepository() {

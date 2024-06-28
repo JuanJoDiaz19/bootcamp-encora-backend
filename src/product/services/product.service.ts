@@ -1,7 +1,9 @@
 import {
   BadRequestException,
+  Inject,
   Injectable,
   NotFoundException,
+  forwardRef,
 } from '@nestjs/common';
 import { CreateProductDto } from '../dto/create-product.dto';
 import { UpdateProductDto } from '../dto/update-product.dto';
@@ -19,11 +21,8 @@ import { Group } from '../entities/group.entity';
 import { CreateReviewDto } from '../dto/create-review.dto';
 import { UpdateReviewDto } from '../dto/update-review.dto';
 import { ConfigService } from '@nestjs/config';
-import {
-  PutObjectAclCommand,
-  PutObjectCommand,
-  S3Client,
-} from '@aws-sdk/client-s3';
+import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { UserService } from '../../auth/services/user.service';
 
 @Injectable()
 export class ProductService {
@@ -43,6 +42,8 @@ export class ProductService {
     private readonly stockRepository: Repository<Stock>,
     @InjectRepository(Group)
     private readonly groupRepository: Repository<Group>,
+    @Inject(forwardRef(() => UserService))
+    private readonly userService : UserService,
   ) {}
 
   async createProduct(
@@ -143,7 +144,7 @@ export class ProductService {
         take: limitNumber,
         relations: {
           category: true,
-          
+          stock: true,
           reviews: true,
         },
       });
@@ -201,23 +202,29 @@ export class ProductService {
     updateProductDto: UpdateProductDto,
     product_images: Array<Express.Multer.File>,
   ): Promise<Product> {
-    updateProductDto.image_urls = [];
-
     try {
-      await Promise.all(
-        product_images.map(async (product_image) => {
-          await this.s3Client.send(
-            new PutObjectCommand({
-              Bucket: 'fitnest-bucket',
-              Key: product_image.originalname,
-              Body: product_image.buffer,
-            }),
-          );
+      updateProductDto.image_urls = [];
 
-          const image_url = `https://fitnest-bucket.s3.amazonaws.com/${product_image.originalname}`;
-          updateProductDto.image_urls.push(image_url);
-        }),
-      );
+      if (updateProductDto.existing_images.length > 0) {
+        updateProductDto.image_urls = updateProductDto.existing_images;
+      }
+
+      if (product_images.length > 0) {
+        await Promise.all(
+          product_images.map(async (product_image) => {
+            await this.s3Client.send(
+              new PutObjectCommand({
+                Bucket: 'fitnest-bucket',
+                Key: product_image.originalname,
+                Body: product_image.buffer,
+              }),
+            );
+
+            const image_url = `https://fitnest-bucket.s3.amazonaws.com/${product_image.originalname}`;
+            updateProductDto.image_urls.push(image_url);
+          }),
+        );
+      }
 
       const product = await this.getProductById(id);
 
@@ -227,15 +234,24 @@ export class ProductService {
         );
       }
 
-      const stock = await this.updateStock(
-        product.stock,
-        updateProductDto.stock,
-      );
+      const stockNum = Number(updateProductDto.stock);
+
+      if (isNaN(stockNum)) {
+        throw new BadRequestException('Invalid stock value');
+      }
+
+      const stock = await this.updateStock(product.stock, stockNum);
 
       const updateProduct = Object.assign(product, {
-        ...updateProductDto,
+        name: updateProductDto.name,
+        type: updateProductDto.type,
+        description: updateProductDto.description,
+        price: updateProductDto.price,
+        category: product.category,
+        image_urls: updateProductDto.image_urls,
         stock,
       });
+
       return await this.productRepository.save(updateProduct);
     } catch (error) {
       throw new NotFoundException(error.message);
@@ -244,8 +260,17 @@ export class ProductService {
 
   async removeProduct(id: string): Promise<DeleteResult> {
     try {
-      const product = this.getProductById(id);
-      const result = await this.productRepository.delete(id);
+      const product = await this.getProductById(id);
+
+      if (!product) {
+        throw new Error(
+          `No es posible eliminar el producto con ID: ${id}, ya que no existe`,
+        );
+      }
+
+      await this.stockRepository.delete({ product: { id: product.id } });
+      const result = await this.productRepository.delete(product.id);
+
       return result;
     } catch (error) {
       throw new NotFoundException(error.message);
@@ -417,7 +442,7 @@ export class ProductService {
 
       return await this.productRepository.findAndCount({
         relations: ['reviews', 'stock'],
-        order:{price:order},
+        order: { price: order },
         skip: (pageNumber - 1) * limitNumber,
         take: limitNumber,
       });
@@ -443,10 +468,10 @@ export class ProductService {
       ) {
         throw new Error('La pagina y el limite deben ser numeros positivos');
       }
-      
+
       return await this.productRepository.findAndCount({
         relations: ['reviews', 'stock'],
-        order:{rating:order},
+        order: { rating: order },
         skip: (pageNumber - 1) * limitNumber,
         take: limitNumber,
       });
@@ -473,14 +498,14 @@ export class ProductService {
         throw new Error('La pagina y el limite deben ser numeros positivos');
       }
 
-      return await this.productRepository.createQueryBuilder("product")
-      .leftJoinAndSelect("product.stock", "stock")
-      .leftJoinAndSelect("product.reviews", "reviews")
-      .orderBy("stock.unities_sold", order)
-      .skip((pageNumber - 1) * limitNumber)
-      .take(limitNumber)
-      .getManyAndCount();
-
+      return await this.productRepository
+        .createQueryBuilder('product')
+        .leftJoinAndSelect('product.stock', 'stock')
+        .leftJoinAndSelect('product.reviews', 'reviews')
+        .orderBy('stock.unities_sold', order)
+        .skip((pageNumber - 1) * limitNumber)
+        .take(limitNumber)
+        .getManyAndCount();
     } catch (error) {
       throw new BadRequestException(error.message);
     }
@@ -495,82 +520,107 @@ export class ProductService {
     try {
       const pageNumber = parseInt(page, 10);
       const limitNumber = parseInt(limit, 10);
-  
-      if (isNaN(pageNumber) || isNaN(limitNumber) || pageNumber <= 0 || limitNumber <= 0) {
+
+      if (
+        isNaN(pageNumber) ||
+        isNaN(limitNumber) ||
+        pageNumber <= 0 ||
+        limitNumber <= 0
+      ) {
         throw new Error('La página y el límite deben ser números positivos');
       }
-  
+
       const category = await this.getCategoryById(categoryId);
-  
-      const [products, total] = await this.productRepository.createQueryBuilder("product")
-        .leftJoinAndSelect("product.reviews", "reviews")
-        .leftJoinAndSelect("product.stock", "stock")
-        .where("product.categoryId = :categoryId", { categoryId: category.id })
-        .orderBy("product.price", order)
+
+      const [products, total] = await this.productRepository
+        .createQueryBuilder('product')
+        .leftJoinAndSelect('product.reviews', 'reviews')
+        .leftJoinAndSelect('product.stock', 'stock')
+        .where('product.categoryId = :categoryId', { categoryId: category.id })
+        .orderBy('product.price', order)
         .skip((pageNumber - 1) * limitNumber)
         .take(limitNumber)
         .getManyAndCount();
-  
+
       return [products, total];
     } catch (error) {
       throw new BadRequestException(error.message);
     }
   }
-  
 
-  async getProductsSortedByRatingForCategory(categoryId: string, order: 'ASC' | 'DESC', page: string, limit: string): Promise<[Product[], number]> {
+  async getProductsSortedByRatingForCategory(
+    categoryId: string,
+    order: 'ASC' | 'DESC',
+    page: string,
+    limit: string,
+  ): Promise<[Product[], number]> {
     try {
       const pageNumber = parseInt(page, 10);
       const limitNumber = parseInt(limit, 10);
-  
-      if (isNaN(pageNumber) || isNaN(limitNumber) || pageNumber <= 0 || limitNumber <= 0) {
+
+      if (
+        isNaN(pageNumber) ||
+        isNaN(limitNumber) ||
+        pageNumber <= 0 ||
+        limitNumber <= 0
+      ) {
         throw new Error('La página y el límite deben ser números positivos');
       }
-  
+
       const category = await this.getCategoryById(categoryId);
-  
-      const [products, total] = await this.productRepository.createQueryBuilder("product")
-        .leftJoinAndSelect("product.reviews", "reviews")
-        .leftJoinAndSelect("product.stock", "stock")
-        .where("product.categoryId = :categoryId", { categoryId: category.id })
-        .orderBy("product.rating", order)
+
+      const [products, total] = await this.productRepository
+        .createQueryBuilder('product')
+        .leftJoinAndSelect('product.reviews', 'reviews')
+        .leftJoinAndSelect('product.stock', 'stock')
+        .where('product.categoryId = :categoryId', { categoryId: category.id })
+        .orderBy('product.rating', order)
         .skip((pageNumber - 1) * limitNumber)
         .take(limitNumber)
         .getManyAndCount();
-  
+
       return [products, total];
     } catch (error) {
       throw new BadRequestException(error.message);
     }
   }
-  
 
-  async getProductsSortedBySoldUnitsForCategory(categoryId: string, order: 'ASC' | 'DESC', page: string, limit: string): Promise<[Product[], number]> {
+  async getProductsSortedBySoldUnitsForCategory(
+    categoryId: string,
+    order: 'ASC' | 'DESC',
+    page: string,
+    limit: string,
+  ): Promise<[Product[], number]> {
     try {
-        const pageNumber = parseInt(page, 10);
-        const limitNumber = parseInt(limit, 10);
+      const pageNumber = parseInt(page, 10);
+      const limitNumber = parseInt(limit, 10);
 
-        if (isNaN(pageNumber) || isNaN(limitNumber) || pageNumber <= 0 || limitNumber <= 0) {
-            throw new Error('La página y el límite deben ser números positivos');
-        }
+      if (
+        isNaN(pageNumber) ||
+        isNaN(limitNumber) ||
+        pageNumber <= 0 ||
+        limitNumber <= 0
+      ) {
+        throw new Error('La página y el límite deben ser números positivos');
+      }
 
-        const category = await this.getCategoryById(categoryId);
+      const category = await this.getCategoryById(categoryId);
 
-        const [products, total] = await this.productRepository.createQueryBuilder("product")
-            .leftJoinAndSelect("product.stock", "stock")
-            .leftJoinAndSelect("product.reviews", "reviews")
-            .where("product.categoryId = :categoryId", { categoryId: category.id })
-            .orderBy("stock.unities_sold", order)
-            .skip((pageNumber - 1) * limitNumber)
-            .take(limitNumber)
-            .getManyAndCount();
+      const [products, total] = await this.productRepository
+        .createQueryBuilder('product')
+        .leftJoinAndSelect('product.stock', 'stock')
+        .leftJoinAndSelect('product.reviews', 'reviews')
+        .where('product.categoryId = :categoryId', { categoryId: category.id })
+        .orderBy('stock.unities_sold', order)
+        .skip((pageNumber - 1) * limitNumber)
+        .take(limitNumber)
+        .getManyAndCount();
 
-        return [products, total];
+      return [products, total];
     } catch (error) {
-        throw new BadRequestException(error.message);
+      throw new BadRequestException(error.message);
     }
-}
-
+  }
 
   //FILTER GROUP
 
@@ -581,88 +631,115 @@ export class ProductService {
     limit: string,
   ): Promise<[Product[], number]> {
     try {
-        const pageNumber = parseInt(page, 10);
-        const limitNumber = parseInt(limit, 10);
-
-        if (isNaN(pageNumber) || isNaN(limitNumber) || pageNumber <= 0 || limitNumber <= 0) {
-            throw new Error('La página y el límite deben ser números positivos');
-        }
-
-        const group = await this.getGroupById(groupId);
-        const groupUuid = group.id; 
-
-        const [products, total] = await this.productRepository.createQueryBuilder("product")
-            .leftJoin("product.category", "category")
-            .leftJoinAndSelect("product.reviews", "reviews")
-            .leftJoinAndSelect("product.stock", "stock")
-            .where("category.groupId = :groupUuid", { groupUuid }) 
-            .orderBy("product.price", order)
-            .skip((pageNumber - 1) * limitNumber)
-            .take(limitNumber)
-            .getManyAndCount();
-
-        return [products, total];
-    } catch (error) {
-        throw new BadRequestException(error.message);
-    }
-}
-
-async getProductsSortedByRatingForGroup(groupId: string, order: 'ASC' | 'DESC', page: string, limit: string): Promise<[Product[], number]> {
-  try {
       const pageNumber = parseInt(page, 10);
       const limitNumber = parseInt(limit, 10);
 
-      if (isNaN(pageNumber) || isNaN(limitNumber) || pageNumber <= 0 || limitNumber <= 0) {
-          throw new Error('La página y el límite deben ser números positivos');
+      if (
+        isNaN(pageNumber) ||
+        isNaN(limitNumber) ||
+        pageNumber <= 0 ||
+        limitNumber <= 0
+      ) {
+        throw new Error('La página y el límite deben ser números positivos');
       }
 
       const group = await this.getGroupById(groupId);
-      const groupUuid = group.id;  // Extraer solo el ID del grupo
+      const groupUuid = group.id;
 
-      const [products, total] = await this.productRepository.createQueryBuilder("product")
-          .leftJoin("product.category", "category")
-          .leftJoinAndSelect("product.reviews", "reviews")
-          .leftJoinAndSelect("product.stock", "stock")
-          .where("category.groupId = :groupUuid", { groupUuid })  
-          .orderBy("product.rating", order)
-          .skip((pageNumber - 1) * limitNumber)
-          .take(limitNumber)
-          .getManyAndCount();
+      const [products, total] = await this.productRepository
+        .createQueryBuilder('product')
+        .leftJoin('product.category', 'category')
+        .leftJoinAndSelect('product.reviews', 'reviews')
+        .leftJoinAndSelect('product.stock', 'stock')
+        .where('category.groupId = :groupUuid', { groupUuid })
+        .orderBy('product.price', order)
+        .skip((pageNumber - 1) * limitNumber)
+        .take(limitNumber)
+        .getManyAndCount();
 
       return [products, total];
-  } catch (error) {
-      throw new BadRequestException(error.message);
-  }
-}
-
-
-  async getProductsSortedBySoldUnitsForGroup(groupId: string, order: 'ASC' | 'DESC', page: string, limit: string): Promise<[Product[], number]> {
-    try {
-        const pageNumber = parseInt(page, 10);
-        const limitNumber = parseInt(limit, 10);
-
-        if (isNaN(pageNumber) || isNaN(limitNumber) || pageNumber <= 0 || limitNumber <= 0) {
-            throw new Error('La pagina y el limite deben ser numeros positivos');
-        }
-
-        const group = await this.getGroupById(groupId);
-        const groupUuid = group.id; // Extraer solo el ID del grupo
-
-        const [products, total] = await this.productRepository.createQueryBuilder("product")
-            .leftJoin("product.category", "category")
-            .where("category.groupId = :groupUuid", { groupUuid }) 
-            .leftJoinAndSelect("product.reviews", "reviews")
-            .leftJoinAndSelect("product.stock", "stock")
-            .orderBy("stock.unities_sold", order)
-            .skip((pageNumber - 1) * limitNumber)
-            .take(limitNumber)
-            .getManyAndCount();
-
-        return [products, total];
     } catch (error) {
-        throw new BadRequestException(error.message);
+      throw new BadRequestException(error.message);
     }
-}
+  }
+
+  async getProductsSortedByRatingForGroup(
+    groupId: string,
+    order: 'ASC' | 'DESC',
+    page: string,
+    limit: string,
+  ): Promise<[Product[], number]> {
+    try {
+      const pageNumber = parseInt(page, 10);
+      const limitNumber = parseInt(limit, 10);
+
+      if (
+        isNaN(pageNumber) ||
+        isNaN(limitNumber) ||
+        pageNumber <= 0 ||
+        limitNumber <= 0
+      ) {
+        throw new Error('La página y el límite deben ser números positivos');
+      }
+
+      const group = await this.getGroupById(groupId);
+      const groupUuid = group.id; // Extraer solo el ID del grupo
+
+      const [products, total] = await this.productRepository
+        .createQueryBuilder('product')
+        .leftJoin('product.category', 'category')
+        .leftJoinAndSelect('product.reviews', 'reviews')
+        .leftJoinAndSelect('product.stock', 'stock')
+        .where('category.groupId = :groupUuid', { groupUuid })
+        .orderBy('product.rating', order)
+        .skip((pageNumber - 1) * limitNumber)
+        .take(limitNumber)
+        .getManyAndCount();
+
+      return [products, total];
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
+  }
+
+  async getProductsSortedBySoldUnitsForGroup(
+    groupId: string,
+    order: 'ASC' | 'DESC',
+    page: string,
+    limit: string,
+  ): Promise<[Product[], number]> {
+    try {
+      const pageNumber = parseInt(page, 10);
+      const limitNumber = parseInt(limit, 10);
+
+      if (
+        isNaN(pageNumber) ||
+        isNaN(limitNumber) ||
+        pageNumber <= 0 ||
+        limitNumber <= 0
+      ) {
+        throw new Error('La pagina y el limite deben ser numeros positivos');
+      }
+
+      const group = await this.getGroupById(groupId);
+      const groupUuid = group.id; // Extraer solo el ID del grupo
+
+      const [products, total] = await this.productRepository
+        .createQueryBuilder('product')
+        .leftJoin('product.category', 'category')
+        .where('category.groupId = :groupUuid', { groupUuid })
+        .leftJoinAndSelect('product.reviews', 'reviews')
+        .leftJoinAndSelect('product.stock', 'stock')
+        .orderBy('stock.unities_sold', order)
+        .skip((pageNumber - 1) * limitNumber)
+        .take(limitNumber)
+        .getManyAndCount();
+
+      return [products, total];
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
+  }
 
   // CRUD CATEGORIES
   async createCategory(
@@ -689,7 +766,7 @@ async getProductsSortedByRatingForGroup(groupId: string, order: 'ASC' | 'DESC', 
         throw Error(`La categoria con nombre: ${categoryName} ya existe`);
       }
 
-      const group = await this.getGroupById(createCategoryDto.groupId);
+      const group = await this.getGroupByName(createCategoryDto.groupName);
 
       const newCategory = this.categoryRepository.create({
         ...createCategoryDto,
@@ -738,6 +815,10 @@ async getProductsSortedByRatingForGroup(groupId: string, order: 'ASC' | 'DESC', 
     category_image: Express.Multer.File,
   ): Promise<Category> {
     try {
+      if (updateCategoryDto.existing_image !== '' && !category_image) {
+        updateCategoryDto.image_url = updateCategoryDto.existing_image;
+      }
+
       if (category_image) {
         await this.s3Client.send(
           new PutObjectCommand({
@@ -762,7 +843,7 @@ async getProductsSortedByRatingForGroup(groupId: string, order: 'ASC' | 'DESC', 
       let group;
       const groupId = updateCategoryDto.groupId;
       if (groupId) {
-        group = this.getGroupById(groupId);
+        group = await this.getGroupById(groupId);
       } else {
         group = category.group;
       }
@@ -820,7 +901,19 @@ async getProductsSortedByRatingForGroup(groupId: string, order: 'ASC' | 'DESC', 
 
   async deleteCategory(id: string): Promise<DeleteResult> {
     try {
-      const category = this.getCategoryById(id);
+      const category = await this.getCategoryById(id);
+
+      if (!category) {
+        throw new NotFoundException(
+          `No se encontró la categoría con ID: ${id}`,
+        );
+      }
+
+      if (category.products.length > 0) {
+        throw new BadRequestException(
+          'No se puede eliminar una categoría que tiene productos asociados',
+        );
+      }
       const result = await this.categoryRepository.delete(id);
       return result;
     } catch (error) {
@@ -880,7 +973,9 @@ async getProductsSortedByRatingForGroup(groupId: string, order: 'ASC' | 'DESC', 
         skip: (pageNumber - 1) * limitNumber,
         take: limitNumber,
         relations: {
-          categories: true,
+          categories: {
+            products: true,
+          },
         },
       });
     } catch (error) {
@@ -927,20 +1022,24 @@ async getProductsSortedByRatingForGroup(groupId: string, order: 'ASC' | 'DESC', 
     updateGroupDto: UpdateGroupDto,
     group_image: Express.Multer.File,
   ): Promise<Group> {
-    if (group_image) {
-      await this.s3Client.send(
-        new PutObjectCommand({
-          Bucket: 'fitnest-bucket',
-          Key: group_image.originalname,
-          Body: group_image.buffer,
-        }),
-      );
-
-      const image_url = `https://fitnest-bucket.s3.amazonaws.com/${group_image.originalname}`;
-      updateGroupDto.image_url = image_url;
-    }
-
     try {
+      if (updateGroupDto.existing_image !== '' && !group_image) {
+        updateGroupDto.image_url = updateGroupDto.existing_image;
+      }
+
+      if (group_image) {
+        await this.s3Client.send(
+          new PutObjectCommand({
+            Bucket: 'fitnest-bucket',
+            Key: group_image.originalname,
+            Body: group_image.buffer,
+          }),
+        );
+
+        const image_url = `https://fitnest-bucket.s3.amazonaws.com/${group_image.originalname}`;
+        updateGroupDto.image_url = image_url;
+      }
+
       const group = await this.getGroupById(groupId);
 
       if (!group) {
@@ -950,6 +1049,7 @@ async getProductsSortedByRatingForGroup(groupId: string, order: 'ASC' | 'DESC', 
       }
 
       const updateGroup = Object.assign(group, updateGroupDto);
+
       return await this.groupRepository.save(updateGroup);
     } catch (error) {
       throw new NotFoundException(error.message);
@@ -958,7 +1058,19 @@ async getProductsSortedByRatingForGroup(groupId: string, order: 'ASC' | 'DESC', 
 
   async deleteGroup(groupId: string): Promise<DeleteResult> {
     try {
-      const group = this.getGroupById(groupId);
+      const group = await this.getGroupById(groupId);
+
+      if (!group) {
+        throw new NotFoundException(
+          `No se encontró el grupo con ID: ${groupId}`,
+        );
+      }
+
+      if (group.categories.length > 0) {
+        throw new BadRequestException(
+          'No se puede eliminar un grupo que tiene categorías asociadas',
+        );
+      }
       const result = await this.groupRepository.delete(groupId);
       return result;
     } catch (error) {
@@ -999,9 +1111,17 @@ async getProductsSortedByRatingForGroup(groupId: string, order: 'ASC' | 'DESC', 
       const product: Product = await this.getProductById(
         createReviewDto.productId,
       );
+
+      const user = await this.userService.findUserById(createReviewDto.userId);
+
+      if (!user) {
+        throw new Error('El usuario no existe');
+      }
+
       const newReview = this.reviewRepository.create({
         ...createReviewDto,
         product,
+        user,
       });
 
       product.rating = this.calculateRating(product.reviews);
@@ -1123,7 +1243,6 @@ async getProductsSortedByRatingForGroup(groupId: string, order: 'ASC' | 'DESC', 
 
   async deleteReview(id: string): Promise<DeleteResult> {
     try {
-      const review = this.getReviewById(id);
       const result = await this.reviewRepository.delete(id);
       return result;
     } catch (error) {

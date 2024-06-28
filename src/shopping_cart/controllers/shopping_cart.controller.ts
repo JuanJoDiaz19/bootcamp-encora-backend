@@ -29,9 +29,19 @@ export class ShoppingCartController {
     return this.shoppingCartService.findOneByUser(userId);
   }
 
+  @Get('refresh/:userId')
+  refreshItems(@Param('userId') userId: string) {
+    return this.shoppingCartService.refreshShoppingCart(userId);
+  }
+
   @Patch(':userId')
-  update(@Param('id') id: string, @Body() updateShoppingCartDto: UpdateShoppingCartDto): Promise<ShoppingCartResponseDto> {
+  update(@Param('userId') id: string, @Body() updateShoppingCartDto: UpdateShoppingCartDto): Promise<ShoppingCartResponseDto> {
     return this.shoppingCartService.update(id, updateShoppingCartDto);
+  }
+
+  @Delete(':userId/:productId')
+  removeItem(@Param('userId') id: string,@Param('productId') productId: string): Promise<ShoppingCartResponseDto> {
+    return this.shoppingCartService.removeProductFromCart(id, productId);
   }
 
   @Delete(':userId')

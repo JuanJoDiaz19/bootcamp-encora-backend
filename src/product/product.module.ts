@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { ProductService } from './services/product.service';
 import { ProductController } from './controllers/product.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -11,13 +11,20 @@ import { CategoryController } from './controllers/category.controller';
 import { GroupController } from './controllers/group.controller';
 import { ReviewController } from './controllers/review.controller';
 import { MulterModule } from '@nestjs/platform-express';
+import { AuthModule } from 'src/auth/auth.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Product,Category,Review,Stock, Group]),
-    MulterModule
+    TypeOrmModule.forFeature([Product, Category, Review, Stock, Group]),
+    MulterModule,
+    forwardRef(() => AuthModule),
   ],
-  controllers: [ProductController, CategoryController, GroupController, ReviewController],
+  controllers: [
+    ProductController,
+    CategoryController,
+    GroupController,
+    ReviewController,
+  ],
   providers: [ProductService],
   exports: [ProductService],
 })

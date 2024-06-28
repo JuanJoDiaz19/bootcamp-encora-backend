@@ -21,6 +21,17 @@ export class AddressService {
         private readonly userRepository: Repository<User>
       ) {}
 
+
+
+      async getAddressesByUserId(userId: string): Promise<Address[]> {
+        return this.addressRepository.find({
+          where: {
+            user: { id: userId },
+          },
+          relations: ['city', 'user'],
+        });
+      }
+        
     async create(createAddressDto: CreateAddressDto, user_id: string) {
         const {city_name, ...address} = createAddressDto;
         const city = await this.CityRepository.findOneBy(
@@ -49,7 +60,11 @@ export class AddressService {
     }
 
     findOne(id: string) : Promise<Address>{
-        return this.addressRepository.findOne({ where:{id: id },relations: ['city']});
+        const address = this.addressRepository.findOne({ where:{id: id },relations: ['city']});
+        if (!address) {
+            throw new NotFoundException(`No se encontró la direccion con id ${id}`)
+        }
+        return address
     }
 
     async update(id: string, updateAddressDto: UpdateAddressDto) {
