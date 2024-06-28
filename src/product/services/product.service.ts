@@ -43,7 +43,7 @@ export class ProductService {
     @InjectRepository(Group)
     private readonly groupRepository: Repository<Group>,
     @Inject(forwardRef(() => UserService))
-    private readonly userService : UserService,
+    private readonly userService: UserService,
   ) {}
 
   async createProduct(
@@ -800,7 +800,9 @@ export class ProductService {
         skip: (pageNumber - 1) * limitNumber,
         take: limitNumber,
         relations: {
-          products: true,
+          products: {
+            stock: true,
+          },
           group: true,
         },
       });
@@ -974,7 +976,9 @@ export class ProductService {
         take: limitNumber,
         relations: {
           categories: {
-            products: true,
+            products: {
+              stock: true,
+            },
           },
         },
       });
