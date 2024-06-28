@@ -1,7 +1,7 @@
 import { Controller, Get, Param } from '@nestjs/common';
 import { CityService } from '../services/city.service';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
-import { City } from '../entities/city.entity';
+import { City } from '../entities/City.entity';
 
 @ApiTags('city')
 @Controller('city')

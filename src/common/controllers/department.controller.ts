@@ -1,7 +1,7 @@
 import { Controller, Get, Param } from '@nestjs/common';
 import { DepartmentService } from '../services/department.service';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
-import { Department } from '../entities/department.entity'; 
+import { Department } from '../entities/Department.entity'; 
 
 @ApiTags('department')
 @Controller('department')
