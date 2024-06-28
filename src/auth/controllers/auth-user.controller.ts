@@ -18,6 +18,7 @@ import { AdminGuard } from '../guards/admin.guard';
 import { UpdateUserDto } from '../dto/update-user.dto';
 import { AuthUser } from '../entities/authUser.entity';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiParam } from '@nestjs/swagger';
+import { SendPQR } from '../dto/send-pqr.dto';
 
 @ApiTags('user')
 @Controller('user/')
@@ -129,5 +130,10 @@ export class AuthUserController {
   ): Promise<{ hasProduct: boolean }> {
     const hasProduct = await this.authService.userHasProductInApprovedOrders(userId, productId);
     return { hasProduct };
+  }
+
+  @Post('send-PQR')
+  sendPQR(@Body() pqr_object: SendPQR){
+    return this.authService.sendPQR(pqr_object);
   }
 }
