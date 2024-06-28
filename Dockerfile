@@ -8,8 +8,6 @@ RUN npm install
 
 COPY tsconfig.* ./
 
-COPY us-east-1-bundle.pem ./
-
 COPY .env ./
 
 COPY src ./src
@@ -22,8 +20,9 @@ COPY --chown=node:node --from=build /fitnest/node_modules /fitnest/node_modules
 
 COPY --chown=node:node --from=build /fitnest/dist /fitnest/dist
 
-# least privileged user
-RUN chown -R node:node /fitnest
+COPY --chown=node:node us-east-1-bundle.pem ./
+
+COPY --chown=node:node .env ./
 
 USER node
 
