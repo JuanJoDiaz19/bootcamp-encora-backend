@@ -19,7 +19,7 @@ import { UpdateUserDto } from '../dto/update-user.dto';
 import { AuthUser } from '../entities/authUser.entity';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiParam } from '@nestjs/swagger';
 import { SendPQR } from '../dto/send-pqr.dto';
-import { Order } from 'src/orders/entities/order.entity';
+import { Order } from '../../orders/entities/order.entity';
 
 @ApiTags('user')
 @Controller('user/')
