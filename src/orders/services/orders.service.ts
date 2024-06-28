@@ -553,6 +553,8 @@ export class OrdersService {
         order.shipment_date=today
         order.received_date=today
         
+        await this.orderRepository.save(order);
+
         
 
         //aqui mandar el correo al usuario de que su orden ha sido enviada
@@ -590,7 +592,7 @@ export class OrdersService {
         const denied =  await this.getStatusByName(name);
         
         order.status = denied
-
+        await this.orderRepository.save(order);
       }
       
     } catch (error) {

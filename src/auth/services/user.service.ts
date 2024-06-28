@@ -284,7 +284,7 @@ export class UserService {
     try {
       const user = await this.userRepository.findOne({
         where: { id: id_user },
-        relations: ['role', 'addresses', 'orders', 'reviews', 'shoppingCart'],
+        relations: ['role', 'addresses', 'orders','orders.items','orders.items.product', 'reviews', 'shoppingCart'],
       });
 
       if (!user) {
