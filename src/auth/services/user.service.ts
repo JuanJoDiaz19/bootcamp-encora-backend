@@ -19,6 +19,8 @@ import { MailerService } from '@nestjs-modules/mailer';
 import { UpdateUserDto } from '../dto/update-user.dto';
 import { ShoppingCartService } from '../../shopping_cart/services/shopping_cart.service';
 import { OrdersService } from '../../orders/services/orders.service';
+import { SendPQR } from '../dto/send-pqr.dto';
+import generateEmail from './data/generate-mail';
 
 @Injectable()
 export class UserService {
@@ -33,20 +35,31 @@ export class UserService {
     private readonly orderService : OrdersService,
   ) {}
 
+  async sendPQR(sendPQR: SendPQR) { 
+    this.mailerService.sendMail({
+      to: sendPQR.email,
+      cc: 'fitnestcorp@gmail.com',
+      from: 'fitnestcorp@gmail.com',
+      subject: 'Confirmación de Recepción de PQR Fitnest ',
+      html: generateEmail(sendPQR)
+    });
+
+  }
+
   async handleUserOauth(createUserDto: CreateUserDto) {
     try{ 
-      const user = this.userRepository.findOneBy({email: createUserDto.email });
-
+      const user = await this.userRepository.findOneBy({email: createUserDto.email });
+      console.log(user);
       if(user){
         //The user is in the system
-        
+        //console.log("Usuario en el sistema")
         const {email, password} = createUserDto;
         const userLogin: LoginUserDto = { email, password};
         return this.login(userLogin);
 
       } else { 
         //The user is not in the system
-        
+        //console.log("Usuario NO en el sistema")
         return this.createUser(createUserDto);
         
       }
