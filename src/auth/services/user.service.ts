@@ -35,18 +35,18 @@ export class UserService {
 
   async handleUserOauth(createUserDto: CreateUserDto) {
     try{ 
-      const user = this.userRepository.findOneBy({email: createUserDto.email });
-
+      const user = await this.userRepository.findOneBy({email: createUserDto.email });
+      console.log(user);
       if(user){
         //The user is in the system
-        
+        //console.log("Usuario en el sistema")
         const {email, password} = createUserDto;
         const userLogin: LoginUserDto = { email, password};
         return this.login(userLogin);
 
       } else { 
         //The user is not in the system
-        
+        //console.log("Usuario NO en el sistema")
         return this.createUser(createUserDto);
         
       }
