@@ -23,7 +23,7 @@ export class AuthGoogleController {
   async handleRedirect(@Req() req, @Res() res) {
     try {
         const user = await this.authService.handleUserOauth(req.user);
-        const front_url = process.env.FRONT_URL || "http://localhost:4000"
+        const front_url = process.env.FRONT_URL || "https://fitnest.online"
         res.redirect( front_url +`/oauth?token=${user.token}`);
     } catch(error) { 
         console.log(error);
