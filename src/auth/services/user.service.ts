@@ -373,7 +373,7 @@ export class UserService {
   async getUserStatusOrders(userId: string, statusName: string): Promise<Order[]> {
     const user = await this.userRepository.findOne({
       where: { id: userId },
-      relations: ['orders', 'orders.items', 'orders.items.product', 'orders.status'],
+      relations: ['orders', 'orders.items', 'orders.items.product', 'orders.status', 'orders.address'],
     });
   
     if (!user) {
