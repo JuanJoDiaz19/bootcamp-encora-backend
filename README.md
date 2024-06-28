@@ -1,73 +1,79 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="200" alt="Nest Logo" /></a>
-</p>
+# Fitnest: Web API
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+[![CD Pipeline](https://github.com/fitnestcorp/fitnest-api-backend/actions/workflows/cd.yml/badge.svg?branch=main)](https://github.com/fitnestcorp/fitnest-api-backend/actions/workflows/cd.yml) [![CI Pipeline](https://github.com/fitnestcorp/fitnest-api-backend/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/fitnestcorp/fitnest-api-backend/actions/workflows/ci.yml)
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+This repo hosts all the files for the Fitnest online store API made with [NestJS 10](https://nestjs.com/) and deployed to [AWS](https://aws.amazon.com/) throuhg [ECS](https://aws.amazon.com/ecs/) using [Docker](https://www.docker.com/get-started/).
 
-## Description
+## Prerequisites
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+For both development and production, you will need to have a `.env` file and a PostgreSQL 16 database running (apart from the obvious Node.js and npm).
 
-## Installation
+### `.env`
 
-```bash
-$ npm install
+An example `.env` file with all the needed variables is provided in the [`.env.example`](https://github.com/fitnestcorp/fitnest-api-backend/blob/main/.env.example) file.
+
+### PostgreSQL
+
+You can install PostgreSQL 16 from the [official website](https://www.postgresql.org/download/) or run it as a docker container with the following command using docker run adn docker volumes:
+
+``` bash
+docker run --name fitnest-db -e POSTGRES_PASSWORD=password -e POSTGRES_DB=fitnest -p 5432:5432 -v fitnest-db-data:/var/lib/postgresql/data -d postgres:16
 ```
 
-## Running the app
+This will create a new container named `fitnest-db` with the password `password` and the database `fitnest` on port 5432.
 
-```bash
-# development
-$ npm run start
+#### Note: **We DO NOT recommend...**
+- using the default password `password` in production.
+- exposing the DB server to the internet.
+- using docker to host the DB server in production.
 
-# watch mode
-$ npm run start:dev
+## Local Development
 
-# production mode
-$ npm run start:prod
+You can run NestJS in development mode with the following commands:
+
+``` bash
+# install dependencies
+npm install
+
+# start dev server
+npm run start:dev
 ```
 
-## Test
+which will create the NestJS dev server on port 3000.
 
-```bash
-# unit tests
-$ npm run test
+## Production
 
-# e2e tests
-$ npm run test:e2e
+Any [node.js](https://nodejs.org/en/blog/release/v20.15.0) environment will suffice to run the production server, however, this project was deployed to ECS using [Docker](https://www.docker.com/get-started/) for ease.
 
-# test coverage
-$ npm run test:cov
+### Node.js
+
+``` bash
+# install production dependencies
+npm ci
+
+# build the project
+npm run build
+
+# start production server
+node dist/main.js
 ```
 
-## Support
+### Docker
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+You can build and run the Docker container with the following command:
 
-## Stay in touch
+> Note that the .env file must be in the same directory as the Dockerfile before building the image
 
-- Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+``` bash
+# build the image
+docker build -t fitnest-api .
 
-## License
+# run the container
+docker run -p 3000:3000 -d fitnest-api
+```
 
-Nest is [MIT licensed](LICENSE).
+## CI/CD Pipelines
+
+This repo has github actions workflows configured for testing on every push to every branch (CI) and deploying to ECR and ECS on any push to the main branch (CD).
+
+The [`.secrets.example`](https://github.com/fitnestcorp/fitnest-api-backend/blob/main/.secrets.example) file contains all the secrets you need to have a working CD pipeline, configurations in AWS is needed to create the ECR repository and ECS cluster, service, tasks and load balancer.
