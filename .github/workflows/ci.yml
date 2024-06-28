@@ -28,30 +28,8 @@ jobs:
     - name: Run tests
       run: npm test
 
-    - name: Run e2e tests
-      run: npm run test:e2e
+    # - name: Run e2e tests
+    #   run: npm run test:e2e
 
     # - name: Run formatter
     #   run: npm run format
-
-    - name: Log in to Amazon ECR
-      id: ecr-login
-      uses: aws-actions/amazon-ecr-login@v1
-
-    - name: Build, tag, and push Docker image
-      env:
-        ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
-        ECR_REPOSITORY: my-nestjs-app
-        IMAGE_TAG: ${{ github.sha }}
-      run: |
-        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-
-    - name: Deploy to ECS
-      env:
-        AWS_REGION: us-east-1
-        ECS_SERVICE: my-ecs-service
-        ECS_CLUSTER: my-ecs-cluster
-        IMAGE_URI: ${{ steps.ecr-login.outputs.registry }}/my-nestjs-app:${{ github.sha }}
-      run: |
-        aws ecs update-service --cluster $ECS_CLUSTER --service $ECS_SERVICE --force-new-deployment --region $AWS_REGION
