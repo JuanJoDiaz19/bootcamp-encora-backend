@@ -4,6 +4,7 @@
 
 This repo hosts all the files for the Fitnest online store API made with [NestJS 10](https://nestjs.com/) and deployed to [AWS](https://aws.amazon.com/) throuhg [ECS](https://aws.amazon.com/ecs/) using [Docker](https://www.docker.com/get-started/).
 
+
 ## Prerequisites
 
 For both development and production, you will need to have a `.env` file and a PostgreSQL 16 database running (apart from the obvious Node.js and npm).
