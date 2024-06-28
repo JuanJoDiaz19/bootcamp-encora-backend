@@ -19,6 +19,8 @@ import { MailerService } from '@nestjs-modules/mailer';
 import { UpdateUserDto } from '../dto/update-user.dto';
 import { ShoppingCartService } from '../../shopping_cart/services/shopping_cart.service';
 import { OrdersService } from '../../orders/services/orders.service';
+import { SendPQR } from '../dto/send-pqr.dto';
+import generateEmail from './data/generate-mail';
 
 @Injectable()
 export class UserService {
@@ -32,6 +34,17 @@ export class UserService {
     private readonly shoppinCartService: ShoppingCartService,
     private readonly orderService : OrdersService,
   ) {}
+
+  async sendPQR(sendPQR: SendPQR) { 
+    this.mailerService.sendMail({
+      to: sendPQR.email,
+      cc: 'fitnestcorp@gmail.com',
+      from: 'fitnestcorp@gmail.com',
+      subject: 'Confirmación de Recepción de PQR Fitnest ',
+      html: generateEmail(sendPQR)
+    });
+
+  }
 
   async handleUserOauth(createUserDto: CreateUserDto) {
     try{ 
