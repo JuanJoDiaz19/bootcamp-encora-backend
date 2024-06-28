@@ -276,10 +276,11 @@ export class UserService {
   }
 
   async updateUser(updateUserDto: UpdateUserDto, id_user: string) {
-    const { role, ...userToUpdate } = updateUserDto;
+    const { role, password ,...userToUpdate } = updateUserDto;
 
     const user = await this.userRepository.preload({
       id: id_user,
+      password: bcrypt.hashSync(password, 10),
       ...userToUpdate,
     });
 

@@ -91,7 +91,7 @@ export class AuthUserController {
   }
 
   @Put(':id_user')
-  @UseGuards(AdminGuard)
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Update a user' })
   @ApiResponse({ status: 200, description: 'User successfully updated' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
