@@ -357,6 +357,7 @@ describe('ProductService', () => {
         getManyAndCount: jest.fn().mockResolvedValue([products, total]),
         skip: jest.fn().mockReturnThis(),
         take: jest.fn().mockReturnThis(),
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
     });
 
       const result = await service.searchProducts(keyword, page, limit);
